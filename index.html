@@ -2,21 +2,1182 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>SCAPE&deg; &mdash; Galton-Brett</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>SCAPE&deg; &mdash; Wetter ist ein Wurf, Klima ist die Verteilung</title>
+<meta name="description" content="Ein interaktives Galton-Brett im Browser: setze und entferne Nagel, lass Kugeln fallen und beobachte, wie sich die Verteilung verschiebt und verbreitert &mdash; ein SCAPE&deg;-Projekt uber Wetter, Klima und Klimawandel." />
 <meta name="theme-color" content="#f2e2c0" />
+<script>
+  (function () {
+    var mode;
+    try {
+      var stored = localStorage.getItem("scapeViewMode");
+      mode = (stored === "mobile" || stored === "desktop") ? stored : null;
+    } catch (e) {}
+    if (!mode) {
+      mode = window.matchMedia("(max-width: 699px)").matches ? "mobile" : "desktop";
+    }
+    document.documentElement.setAttribute("data-view", mode);
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  body{margin:0;font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#111;}
-  .wrap{max-width:600px;margin:0 auto;padding:40px 20px;}
-  h1{text-transform:uppercase;font-weight:900;font-size:28px;line-height:1;}
-  p{font-size:15px;line-height:1.6;}
+  :root{
+    --ink:#111111;
+    --paper:#ffffff;
+    --line:#111111;
+
+    /* SCAPE&deg; palette, sampled from the corporate identity guide */
+    --olive:#6b6b23;
+    --mustard:#d2a716;
+    --orange:#ef8f2c;
+    --rust:#c65a2a;
+    --red:#df2a1e;
+    --purple:#4a2e83;
+    --green:#00954f;
+    --cyan:#1093c4;
+    --navy:#28348f;
+
+    --cream:#f2e2c0;
+    --pastel-yellow:#f6ea79;
+    --bright-yellow:#ffe400;
+    --pastel-blue:#cfe6f6;
+    --pastel-lavender:#dcd6f2;
+    --mint:#4ab48a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    overscroll-behavior-y:none;
+  }
+  h1,h2,h3{font-family:inherit;}
+  img,svg{max-width:100%;}
+
+  .wrap{ max-width:600px; margin:0 auto; }
+
+  /* ============ WORDMARK / TOPBAR ============ */
+  .topbar{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    padding:22px 20px 14px;
+  }
+  .wordmark .word{
+    display:block; font-size:26px; font-weight:800; letter-spacing:-.01em; line-height:1;
+  }
+  .wordmark .sub{
+    display:block; margin-top:4px; font-size:10px; font-weight:700;
+    letter-spacing:.14em; text-transform:uppercase;
+  }
+  .topbar-right{
+    display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+  }
+  #view-toggle{
+    border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-family:inherit; font-weight:800; font-size:9.5px; letter-spacing:.05em;
+    text-transform:uppercase; padding:5px 8px; cursor:pointer; white-space:nowrap;
+  }
+  #view-toggle:active{ background:var(--ink); color:var(--paper); }
+
+  /* ============ POSTER HERO ============ */
+  .poster{
+    margin:0 20px 18px;
+    position:relative;
+    aspect-ratio:2.2/1;
+    overflow:hidden;
+  }
+  .poster-grid{
+    position:absolute; inset:0;
+    display:grid;
+    grid-template-columns:repeat(10,1fr);
+    grid-template-rows:1fr 1fr;
+  }
+  .q-orange{ grid-column:1/6; grid-row:1/2; background:var(--rust); }
+  .q-yellow{ grid-column:6/11; grid-row:1/2; background:var(--pastel-yellow); }
+  .q-cream{ grid-column:1/8; grid-row:2/3; background:var(--cream); }
+  .q-navy{ grid-column:8/11; grid-row:2/3; background:var(--navy); }
+
+  .arch{
+    position:absolute; right:5%; top:8%;
+    width:34%;
+    color:var(--mint);
+  }
+  .arch svg{ display:block; width:100%; height:auto; }
+
+  .poster-copy{
+    position:absolute; left:0; right:0; bottom:0;
+    padding:0 18px 16px;
+    max-width:74%;
+  }
+  .poster-title{
+    margin:0 0 6px; font-weight:900; text-transform:uppercase;
+    font-size:clamp(20px,7vw,30px); line-height:.98; letter-spacing:-.01em;
+  }
+  .poster-tagline{
+    margin:0; font-size:10px; font-weight:700; letter-spacing:.02em;
+    line-height:1.35; text-transform:uppercase;
+  }
+
+  main{ padding:0 20px 30px; }
+
+  /* ============ SECTION LABELS ============ */
+  .section-label{
+    font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+    margin:26px 0 12px;
+  }
+  .section-label.first{ margin-top:0; }
+
+  /* ============ EXPLAINER / BLURB ============ */
+  .explainer{ margin:30px 0 10px; }
+  .explainer h2{
+    margin:0 0 10px; font-size:19px; font-weight:800; letter-spacing:-.01em;
+  }
+  .explainer h3{
+    margin:22px 0 8px; font-size:14px; font-weight:800; letter-spacing:.02em;
+  }
+  p.blurb{
+    margin:0 0 14px; font-size:14.5px; line-height:1.6; color:var(--ink);
+  }
+  .intro-blurb{ margin:0 0 22px; }
+  .intro-blurb p.blurb{ margin-bottom:0; }
+
+  /* ============ SEGMENTED CONTROLS ============ */
+  .seg-row{ display:flex; gap:8px; margin-bottom:10px; }
+  .seg-btn{
+    flex:1; border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-family:inherit; font-weight:800; font-size:12px; text-transform:uppercase;
+    letter-spacing:.03em; padding:11px 6px; cursor:pointer; text-align:center;
+  }
+  .seg-btn.active{ background:var(--ink); color:var(--paper); }
+  .seg-btn:disabled{ opacity:.4; cursor:default; }
+  .seg-btn .sub{
+    display:block; font-size:9px; font-weight:600; text-transform:none;
+    letter-spacing:0; opacity:.7; margin-top:2px;
+  }
+  .seg-btn.tool-add.active{ background:var(--green); border-color:var(--green); color:#fff; }
+  .seg-btn.tool-remove.active{ background:var(--red); border-color:var(--red); color:#fff; }
+
+  /* ============ SIM STAGE ============ */
+  .stage-card{
+    margin:0 0 14px;
+    border:2px solid var(--ink);
+    background:var(--cream);
+    position:relative;
+  }
+  .stage{
+    position:relative;
+    width:100%;
+    aspect-ratio:3/4;
+    touch-action:none;
+    overflow:hidden;
+  }
+  .stage canvas{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    display:block;
+  }
+  .stage-hint-badge{
+    position:absolute; top:10px; left:10px; right:10px; z-index:3;
+    background:var(--paper); border:2px solid var(--ink);
+    font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    padding:6px 8px;
+    pointer-events:none;
+    text-align:center;
+    line-height:1.3;
+  }
+  .stage-hint-badge[hidden]{ display:none; }
+  @keyframes badge-pulse{ 0%,100%{ background:var(--paper); } 50%{ background:var(--bright-yellow); } }
+  .stage-hint-badge.attn{ animation:badge-pulse 1.1s ease-in-out infinite; }
+
+  /* ============ READOUT ============ */
+  .readout{
+    display:flex; gap:14px 22px; flex-wrap:wrap;
+    margin-bottom:18px; padding:16px 0; border-top:2px solid var(--ink); border-bottom:2px solid var(--ink);
+  }
+  .readout div{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .readout b{ display:block; font-size:14px; font-weight:700; letter-spacing:0; margin-top:3px; text-transform:none; }
+
+  /* ============ SLIDER ============ */
+  .slider-row{ margin-bottom:16px; }
+  .slider-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .slider-head b{ font-size:14px; letter-spacing:0; }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:22px; background:transparent; cursor:pointer; margin:0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:6px; background:var(--paper); border:2px solid var(--ink);
+  }
+  input[type=range]::-moz-range-track{
+    height:6px; background:var(--paper); border:2px solid var(--ink);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:22px; height:22px; margin-top:-10px;
+    background:var(--bright-yellow); border:2px solid var(--ink);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:0;
+    background:var(--bright-yellow); border:2px solid var(--ink);
+  }
+
+  /* ============ CTA / CONTROLS ============ */
+  .btn-row{ display:flex; gap:10px; margin-bottom:10px; }
+
+  .btn-row button{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%;
+    font-family:inherit; font-weight:800; font-size:15px; text-transform:uppercase; letter-spacing:.02em;
+    padding:16px 14px; cursor:pointer;
+    border:2px solid var(--ink);
+    background:var(--paper); color:var(--ink);
+  }
+  #sim-primary{ background:var(--bright-yellow); flex:1.5; }
+  #sim-reset{ flex:1; }
+  .btn-row button svg{ width:19px; height:19px; flex:none; }
+  .btn-row button .sub{
+    display:block; font-size:10.5px; font-weight:600; text-transform:none; letter-spacing:0; opacity:.75; margin-top:1px;
+  }
+  .btn-row button:disabled{ opacity:.4; cursor:default; }
+
+  .hint{
+    margin-top:12px; font-size:11.5px; font-weight:500; color:var(--ink); text-align:center;
+  }
+  .build-tag{
+    margin-top:26px; font-size:9.5px; font-weight:600; color:var(--ink); text-align:center; opacity:.4;
+  }
+
+  /* ============ SCENARIO CARDS ============ */
+  .scenario-row{ display:flex; gap:8px; margin-bottom:10px; }
+  .scenario-btn{
+    flex:1; border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-family:inherit; font-weight:800; font-size:11px; text-transform:uppercase;
+    letter-spacing:.02em; padding:10px 5px; cursor:pointer; text-align:center; line-height:1.2;
+  }
+  .scenario-btn.active{ background:var(--ink); color:var(--paper); }
+
+  /* ============ FIGURE (distribution diagrams) ============ */
+  .figure{
+    border:2px solid var(--ink); background:var(--cream);
+    padding:12px 12px 8px; margin:0 0 14px;
+  }
+  .figure svg{ display:block; width:100%; height:auto; }
+  .figure figcaption{
+    margin-top:8px; font-size:11px; font-weight:600; line-height:1.45;
+  }
+  .figure figcaption b{ font-weight:800; }
+
+  /* ============ FOOTER ============ */
+  .brand-footer{
+    padding:26px 20px 34px; border-top:2px solid var(--ink);
+    font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; line-height:1.6;
+  }
+
+  /* ============ DESKTOP VIEW ============
+     Base styles above = mobile / vertical phone (the primary target).
+     Overrides below apply when the viewport is wide (auto-detected) or
+     when a visitor explicitly picks the desktop view via the toggle. */
+  :root[data-view="desktop"] .wrap{ max-width:760px; }
+  :root[data-view="desktop"] .poster-title{ font-size:clamp(26px,5vw,38px); }
+  :root[data-view="desktop"] .explainer h2{ font-size:22px; }
+  :root[data-view="desktop"] p.blurb{ font-size:15.5px; }
+  :root[data-view="desktop"] .stage-card{
+    max-width:470px; margin-left:auto; margin-right:auto;
+  }
+  :root[data-view="desktop"] .btn-row,
+  :root[data-view="desktop"] .readout,
+  :root[data-view="desktop"] .slider-row,
+  :root[data-view="desktop"] .seg-row,
+  :root[data-view="desktop"] .scenario-row{ max-width:470px; margin-left:auto; margin-right:auto; }
+  :root[data-view="desktop"] .btn-row button:hover:not(:disabled){ opacity:.85; }
+  :root[data-view="desktop"] .seg-btn:hover:not(:disabled){ opacity:.85; }
 </style>
 </head>
 <body>
+
 <div class="wrap">
-  <h1>SCAPE&deg; &mdash; Galton-Brett</h1>
-  <p>Wetter ist ein Wurf. Klima ist die Verteilung.</p>
-  <p><b>In Arbeit.</b> Die interaktive Simulation folgt in K&uuml;rze.</p>
+  <header class="topbar">
+    <div class="wordmark">
+      <span class="word">SCAPE&deg;</span>
+      <span class="sub">Wetter, Klima, Mensch</span>
+    </div>
+    <div class="topbar-right">
+      <button id="view-toggle" type="button"></button>
+    </div>
+  </header>
+
+  <div class="poster">
+    <div class="poster-grid">
+      <div class="q-orange"></div>
+      <div class="q-yellow"></div>
+      <div class="q-cream"></div>
+      <div class="q-navy"></div>
+    </div>
+    <div class="arch" aria-hidden="true">
+      <svg viewBox="0 0 300 220">
+        <circle cx="150" cy="18" r="10" fill="currentColor"/>
+        <circle cx="110" cy="70" r="7" fill="currentColor"/><circle cx="190" cy="70" r="7" fill="currentColor"/>
+        <circle cx="70" cy="122" r="7" fill="currentColor"/><circle cx="150" cy="122" r="7" fill="currentColor"/><circle cx="230" cy="122" r="7" fill="currentColor"/>
+        <path d="M20,205 C70,205 90,150 150,150 C210,150 230,205 280,205" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="poster-copy">
+      <h1 class="poster-title">Wetter ist ein Wurf</h1>
+      <p class="poster-tagline">Klima ist die Verteilung. Verschiebe die N&auml;gel &mdash; und die Verteilung wandert mit.</p>
+    </div>
+  </div>
+
+  <main>
+    <div class="intro-blurb">
+      <p class="blurb"><b>So funktioniert's:</b> Jede Kugel ist <b>ein Wetterereignis</b> &mdash; ein einzelner Tag, zuf&auml;llig und unvorhersagbar. Der Berg, den viele Kugeln zusammen bilden, ist das <b>Klima</b>. Tippe ins Brett, um N&auml;gel zu <b>setzen oder zu entfernen</b>, und starte dann den Kugelregen: Die N&auml;gel sind die Spielregeln des Systems &mdash; &auml;nderst du sie, &auml;ndert sich die ganze Verteilung.</p>
+    </div>
+
+    <div class="section-label first">Szenario</div>
+    <div class="scenario-row" id="scenario-row">
+      <button class="scenario-btn active" data-scenario="normal">Normal&shy;klima</button>
+      <button class="scenario-btn" data-scenario="warm">W&auml;rmer</button>
+      <button class="scenario-btn" data-scenario="extreme">Mehr Extreme</button>
+    </div>
+
+    <div class="section-label">N&auml;gel bearbeiten &mdash; tippe ins Brett</div>
+    <div class="seg-row" id="tool-row">
+      <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
+      <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
+    </div>
+
+    <div class="stage-card">
+      <div class="stage" id="stage">
+        <canvas id="board-canvas"></canvas>
+        <canvas id="ball-canvas"></canvas>
+        <div class="stage-hint-badge attn" id="stage-hint">Tippe ins Brett, um N&auml;gel zu setzen oder zu entfernen</div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head">
+        <span>Anzahl Kugeln</span><b id="ball-count-label">300</b>
+      </div>
+      <input type="range" id="ball-count" min="20" max="1200" step="20" value="300" />
+    </div>
+
+    <div class="readout" id="readout">
+      <div>Status<b id="ro-status">Bereit</b></div>
+      <div>Gefallen<b id="ro-fallen">0</b></div>
+      <div>Mittelwert<b id="ro-mean">&mdash;</b></div>
+      <div>Streuung<b id="ro-sd">&mdash;</b></div>
+      <div>Extreme<b id="ro-extreme">0 %</b></div>
+    </div>
+
+    <div class="btn-row">
+      <button id="sim-primary">
+        <svg id="sim-primary-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/></svg>
+        <span>
+          <span id="sim-primary-label">Start</span>
+          <span class="sub" id="sim-primary-sub">Kugelregen starten</span>
+        </span>
+      </button>
+      <button id="sim-reset">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
+        <span><span>Reset</span></span>
+      </button>
+    </div>
+    <div class="hint" id="hint">Ein einzelner Wurf sagt nichts. Erst viele Kugeln zeigen das Klima.</div>
+
+    <div class="explainer">
+      <h2>Wetter oder Klima?</h2>
+      <p class="blurb">
+        Eine einzelne Kugel l&auml;uft durch das Brett und landet irgendwo. Wo genau, kann niemand vorhersagen &mdash; an jedem Nagel entscheidet ein Hauch von Zufall &uuml;ber links oder rechts. Das ist <b>Wetter</b>: ein einzelnes Ereignis, kurzfristig, launisch, im Detail nicht planbar. Ein kalter Julitag, ein Sturm, ein Rekordsommer &mdash; jeweils eine Kugel.
+      </p>
+      <p class="blurb">
+        Lasse jedoch tausend Kugeln fallen, entsteht aus lauter Zufall etwas erstaunlich Stabiles: eine glockenf&ouml;rmige Verteilung. Sie sagt zwar nichts &uuml;ber die n&auml;chste Kugel aus, daf&uuml;r alles &uuml;ber das System als Ganzes. Das ist <b>Klima</b> &mdash; nicht das Wetter von morgen, sondern die <b>Statistik des Wetters</b> &uuml;ber lange Zeitr&auml;ume, klassischerweise &uuml;ber 30 Jahre gemittelt. Klima ist die Form des Berges; Wetter ist die einzelne Kugel darin.
+      </p>
+      <p class="blurb">
+        Deshalb ist der Satz &bdquo;Es war doch letzte Woche kalt, also gibt es keinen Klimawandel&ldquo; ein Denkfehler: Er verwechselt eine Kugel mit dem Berg. Selbst in einem deutlich w&auml;rmeren Klima f&auml;llt noch die eine oder andere Kugel weit links &mdash; nur eben seltener.
+      </p>
+
+      <h2>Was der Klimawandel mit dem Brett macht</h2>
+      <p class="blurb">
+        Der Klimawandel w&uuml;rfelt nicht die einzelnen Kugeln neu &mdash; er baut das Brett um. Mehr Treibhausgase in der Atmosph&auml;re ver&auml;ndern die Spielregeln, nach denen sich das Wetter einstellt. In diesem Exponat &uuml;bernimmst du diese Rolle: Jeder Nagel, den du setzt oder entfernst, lenkt die Kugeln anders ab und ver&auml;ndert damit die gesamte Verteilung. Statistiker sprechen von drei Effekten, die sich in Messdaten weltweit zeigen.
+      </p>
+
+      <h3>1. Verschiebung des Mittels</h3>
+      <figure class="figure">
+        <svg viewBox="0 0 320 130" aria-label="Zwei Glockenkurven, die zweite nach rechts verschoben">
+          <line x1="12" y1="108" x2="308" y2="108" stroke="#111" stroke-width="2"/>
+          <path d="M20,108 C70,108 76,26 116,26 C156,26 162,108 212,108" fill="none" stroke="#111" stroke-width="2.5" stroke-dasharray="5 5"/>
+          <path d="M76,108 C126,108 132,26 172,26 C212,26 218,108 268,108" fill="none" stroke="#c65a2a" stroke-width="3.5"/>
+          <line x1="116" y1="26" x2="116" y2="108" stroke="#111" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <line x1="172" y1="26" x2="172" y2="108" stroke="#c65a2a" stroke-width="1.5" stroke-dasharray="3 3"/>
+          <path d="M120,17 L168,17 M160,11 L168,17 L160,23" fill="none" stroke="#c65a2a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="16" y="124" font-family="Archivo,Arial" font-size="9" font-weight="700" fill="#111">KALT</text>
+          <text x="272" y="124" font-family="Archivo,Arial" font-size="9" font-weight="700" fill="#111">HEISS</text>
+        </svg>
+        <figcaption><b>Der ganze Berg wandert nach rechts.</b> Die Streuung bleibt gleich, aber alles wird w&auml;rmer: Was fr&uuml;her ein hei&szlig;er Sommer war, ist nun ein durchschnittlicher. Neue Rekordhitze taucht auf, extreme K&auml;lte wird selten.</figcaption>
+      </figure>
+
+      <h3>2. Zunahme der Streuung</h3>
+      <figure class="figure">
+        <svg viewBox="0 0 320 130" aria-label="Eine schmale und eine breite, flachere Glockenkurve">
+          <line x1="12" y1="108" x2="308" y2="108" stroke="#111" stroke-width="2"/>
+          <path d="M84,108 C124,108 130,26 160,26 C190,26 196,108 236,108" fill="none" stroke="#111" stroke-width="2.5" stroke-dasharray="5 5"/>
+          <path d="M20,108 C80,108 96,52 160,52 C224,52 240,108 300,108" fill="none" stroke="#4a2e83" stroke-width="3.5"/>
+          <path d="M92,90 L28,90 M36,84 L28,90 L36,96" fill="none" stroke="#4a2e83" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M228,90 L292,90 M284,84 L292,90 L284,96" fill="none" stroke="#4a2e83" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="16" y="124" font-family="Archivo,Arial" font-size="9" font-weight="700" fill="#111">KALT</text>
+          <text x="272" y="124" font-family="Archivo,Arial" font-size="9" font-weight="700" fill="#111">HEISS</text>
+        </svg>
+        <figcaption><b>Der Berg wird breiter und flacher.</b> Der Mittelwert kann gleich bleiben &mdash; trotzdem schwankt das Wetter st&auml;rker. Beide Enden wachsen: mehr Hitze <em>und</em> mehr Ausrei&szlig;er nach unten, mehr D&uuml;rre <em>und</em> mehr Starkregen.</figcaption>
+      </figure>
+
+      <h3>3. Wirkung auf die Extreme</h3>
+      <figure class="figure">
+        <svg viewBox="0 0 320 130" aria-label="Verschobene und verbreiterte Kurve mit stark vergroessertem rechten Ende">
+          <line x1="12" y1="108" x2="308" y2="108" stroke="#111" stroke-width="2"/>
+          <line x1="236" y1="16" x2="236" y2="108" stroke="#df2a1e" stroke-width="2" stroke-dasharray="4 4"/>
+          <path d="M20,108 C70,108 76,26 116,26 C156,26 162,108 212,108" fill="none" stroke="#111" stroke-width="2.5" stroke-dasharray="5 5"/>
+          <path d="M56,108 C116,108 132,46 186,46 C240,46 252,108 306,108" fill="none" stroke="#df2a1e" stroke-width="3.5"/>
+          <path d="M236,108 C258,108 268,84 282,74 C292,67 300,101 306,108 Z" fill="#df2a1e" opacity=".85"/>
+          <text x="16" y="124" font-family="Archivo,Arial" font-size="9" font-weight="700" fill="#111">KALT</text>
+          <text x="196" y="12" font-family="Archivo,Arial" font-size="8.5" font-weight="800" fill="#df2a1e">EXTREM-SCHWELLE</text>
+        </svg>
+        <figcaption><b>Am Rand wird aus wenig sehr viel.</b> Eine kleine Verschiebung des Mittels vervielfacht die F&auml;lle jenseits der Schwelle &mdash; weil die Glockenkurve dort steil abf&auml;llt. Aus einem &bdquo;Jahrhundertsommer&ldquo; wird so binnen Jahrzehnten ein Ereignis, das mehrfach pro Generation auftritt.</figcaption>
+      </figure>
+
+      <h2>Warum ausgerechnet eine Glockenkurve?</h2>
+      <p class="blurb">
+        Das Galton-Brett, benannt nach dem britischen Forscher Francis Galton (1822&ndash;1911), demonstriert einen der tiefsten S&auml;tze der Mathematik: den <b>zentralen Grenzwertsatz</b>. Er besagt, dass sich viele kleine, unabh&auml;ngige Zufallseinfl&uuml;sse &mdash; hier: das Abprallen an jedem einzelnen Nagel &mdash; in der Summe fast immer zu einer Normalverteilung addieren, der ber&uuml;hmten Glockenkurve.
+      </p>
+      <p class="blurb">
+        Genau das passiert auch in der Atmosph&auml;re: Die Temperatur eines Tages ergibt sich aus unz&auml;hligen Einfl&uuml;ssen &mdash; Bew&ouml;lkung, Windrichtung, Bodenfeuchte, Meeresstr&ouml;mungen. Deshalb sind Klimagr&ouml;&szlig;en wie die Tagesmitteltemperatur in guter N&auml;herung glockenf&ouml;rmig verteilt. Andere Gr&ouml;&szlig;en, etwa Niederschlagsmengen, sind stark unsymmetrisch &mdash; auch das l&auml;sst sich hier nachbauen, indem du die N&auml;gel bewusst ungleichm&auml;&szlig;ig setzt.
+      </p>
+      <p class="blurb">
+        Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 1000 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
+      </p>
+      <p class="blurb">
+        <b>Probiere es aus:</b> Entferne eine ganze Nagelreihe auf einer Seite und schau, wohin die Kugeln wandern. Oder w&auml;hle oben ein Szenario &mdash; <em>W&auml;rmer</em> verschiebt das Mittel, <em>Mehr Extreme</em> verbreitert die Verteilung. Beobachte dabei die Kennzahlen unter dem Brett: Mittelwert, Streuung und den Anteil der Kugeln in den extremen Randbereichen.
+      </p>
+    </div>
+    <div class="build-tag">build v1</div>
+  </main>
+
+  <footer class="brand-footer">
+    Wetter, Klima, Wandel.<br>Wir erkl&auml;ren es. &mdash; SCAPE&deg;
+  </footer>
 </div>
+<script>
+(function () {
+  'use strict';
+
+  // ============ GEOMETRY (board coordinates) ============
+  // The board is described in a unit space: x in [0,1] across the width,
+  // y in [0,1] from the funnel mouth down to the floor of the bins. All
+  // physics runs in this space and is only scaled to pixels for drawing,
+  // so the simulation behaves identically on a phone and on a desktop.
+  var ROWS = 12;            // triangular pin rows
+  var BINS = ROWS + 1;      // one collecting bin per landing column
+  var TOP_Y = 0.17;         // first pin row
+  var ROW_DY = 0.049;       // vertical pin spacing
+  var COL_DX = 0.060;       // horizontal pin spacing
+  var BIN_TOP = 0.80;       // where the bin walls begin
+  var PIN_R = 0.009;        // pin radius
+  var BALL_R = 0.011;       // ball radius
+  var GRAVITY = 2.6;        // unit-space gravity
+  var MAX_V = 0.55;         // fall-speed cap: leaves time to reach the next column
+  var STEER = 26.0;         // how briskly a ball slides to its chosen column
+  var DRIFT_KEEP = 0.6;     // chance a ball keeps its sideways momentum in a gap
+  var SUBSTEPS = 2;
+  var DT = 1 / 60 / SUBSTEPS;
+
+  // ============ PIN GRID ============
+  // Pins live on a fixed lattice so that "add" and "remove" are just a
+  // boolean toggle per slot. Row r has r+1 slots, centred on x = 0.5.
+  var pins = [];            // array of rows, each an array of booleans
+  var pinPos = [];          // matching lattice positions {x,y}
+
+  function slotX(row, i) { return 0.5 + (i - row / 2) * COL_DX; }
+  function slotY(row) { return TOP_Y + row * ROW_DY; }
+
+  function buildLattice() {
+    pinPos = [];
+    for (var r = 0; r < ROWS; r++) {
+      var rowPos = [];
+      for (var i = 0; i <= r; i++) rowPos.push({ x: slotX(r, i), y: slotY(r) });
+      pinPos.push(rowPos);
+    }
+  }
+
+  function defaultPins() {
+    var p = [];
+    for (var r = 0; r < ROWS; r++) {
+      var row = [];
+      for (var i = 0; i <= r; i++) row.push(true);
+      p.push(row);
+    }
+    return p;
+  }
+
+  // Scenario presets. They do not fake the statistics: they only change
+  // which pins exist. The resulting distribution then emerges from the
+  // simulation itself, exactly as it does when a visitor edits by hand.
+  function scenarioPins(name) {
+    var p = defaultPins();
+    var r, i, rel;
+    if (name === 'warm') {
+      // Thin out the right flank. A ball drifting right there meets no pin
+      // to send it back, so the whole heap slides towards the warm end --
+      // a shift of the mean with the shape largely intact.
+      for (r = 2; r < ROWS; r++) {
+        for (i = 0; i <= r; i++) {
+          if (r > 0 && i / r > 0.66) p[r][i] = false;
+        }
+      }
+    } else if (name === 'extreme') {
+      // Thin out both outer flanks. Balls that wander outwards keep going
+      // instead of being nudged back, so the mean stays put while the
+      // distribution grows wider and the tails get heavier.
+      for (r = 3; r < ROWS; r++) {
+        for (i = 0; i <= r; i++) {
+          rel = i / r;
+          if (rel < 0.22 || rel > 0.78) p[r][i] = false;
+        }
+      }
+    }
+    return p;
+  }
+
+  function countPins() {
+    var n = 0;
+    for (var r = 0; r < pins.length; r++) {
+      for (var i = 0; i < pins[r].length; i++) if (pins[r][i]) n++;
+    }
+    return n;
+  }
+
+  // ============ BINS ============
+  // One bin per landing column, each centred exactly on its lattice
+  // position, so a ball that commits to column k always lands in bin k.
+  var BIN_W = COL_DX;
+  var EDGES = (function () {
+    var e = [];
+    for (var i = 0; i <= BINS; i++) e.push(slotX(ROWS, 0) - COL_DX / 2 + i * COL_DX);
+    return e;
+  })();
+
+  function binIndex(x) {
+    if (x <= EDGES[0]) return 0;
+    if (x >= EDGES[BINS]) return BINS - 1;
+    return Math.max(0, Math.min(BINS - 1, Math.floor((x - EDGES[0]) / BIN_W)));
+  }
+
+  var bins = new Array(BINS).fill(0);
+  var binSamples = [];   // bin index per settled ball, for mean/sd
+
+  // ============ BALLS ============
+  var balls = [];        // live balls in flight
+  var toRelease = 0;     // how many are still queued
+  var releaseTimer = 0;
+  var RELEASE_EVERY = 0.055; // seconds between drops
+  var MAX_LIVE = 90;
+
+  function spawnBall() {
+    // k = how many times this ball has gone right so far. After row r the
+    // ball sits in the gap at lattice position slotX(r+1, k) -- tracking k
+    // directly is what makes the board exactly binomial.
+    balls.push({
+      x: 0.5 + (Math.random() - 0.5) * 0.006,
+      y: 0.045,
+      vy: 0.12,
+      k: 0,
+      drift: 0,
+      nextRow: 0,
+      target: 0.5,
+      settled: false
+    });
+  }
+
+  // Height of the drawn histogram column of a bin, in unit space. A ball is
+  // absorbed when it reaches the top of its column, so what stops the ball
+  // is exactly what the visitor sees.
+  function heapTop(bi) {
+    var maxN = 1;
+    for (var m = 0; m < BINS; m++) maxN = Math.max(maxN, bins[m]);
+    var avail = (1 - BIN_TOP) - 0.012;
+    return 1 - avail * (bins[bi] / maxN);
+  }
+
+  function stepBall(b) {
+    b.vy += GRAVITY * DT;
+    if (b.vy > MAX_V) b.vy = MAX_V;
+    b.x += (b.target - b.x) * STEER * DT;
+    b.y += b.vy * DT;
+
+    // --- reaching the next pin row: decide left or right ---
+    if (b.nextRow < ROWS && b.y >= slotY(b.nextRow) - PIN_R - BALL_R * 0.5) {
+      var r = b.nextRow;
+      var pi = Math.max(0, Math.min(r, b.k));
+      if (pins[r][pi]) {
+        // A pin is here: a fair coin decides, and the bounce sets the
+        // direction the ball is now travelling in.
+        if (Math.random() < 0.5) { b.k++; b.drift = 1; }
+        else { b.drift = -1; }
+      } else {
+        // No pin: nothing deflects the ball, so it carries on the way it
+        // was already going. This is why removing pins is not neutral --
+        // it lets a sideways run continue instead of being re-randomised.
+        if (b.drift > 0) b.k++;
+        else if (b.drift === 0 && Math.random() < 0.5) b.k++;
+        if (Math.random() > DRIFT_KEEP) b.drift = 0;
+      }
+      b.k = Math.max(0, Math.min(r + 1, b.k));
+      b.target = slotX(r + 1, b.k);
+      b.nextRow++;
+    }
+
+    // --- landing ---
+    // Only once every pin row is behind it, so a heap growing in the middle
+    // can never catch a ball that is still choosing its column.
+    if (b.nextRow < ROWS || b.y < BIN_TOP) return;
+    var bIdx = binIndex(b.x);
+    var top = heapTop(bIdx);
+    if (b.y + BALL_R >= top) {
+      b.settled = true;
+      b.bin = bIdx;
+      b.y = top - BALL_R;
+    }
+  }
+
+  // ============ CANVAS / LAYOUT ============
+  var stage = document.getElementById('stage');
+  var boardCanvas = document.getElementById('board-canvas');
+  var ballCanvas = document.getElementById('ball-canvas');
+  var boardCtx = boardCanvas.getContext('2d');
+  var ballCtx = ballCanvas.getContext('2d');
+
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var W = 0, H = 0;
+
+  function toPx(x, y) { return { x: x * W, y: y * H }; }
+
+  // Radii are expressed as a fraction of the board width so that pins and
+  // balls keep the same proportion to the pin spacing at any screen size.
+  function radiusPx(r) { return r * W; }
+
+  function layout() {
+    var rect = stage.getBoundingClientRect();
+    W = rect.width;
+    H = rect.height;
+    [boardCanvas, ballCanvas].forEach(function (c) {
+      c.width = Math.round(W * dpr);
+      c.height = Math.round(H * dpr);
+    });
+    boardCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ballCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // ============ DRAWING ============
+  var INK = '#111111';
+
+  function drawBoard() {
+    boardCtx.clearRect(0, 0, W, H);
+
+    // --- funnel ---
+    boardCtx.fillStyle = INK;
+    boardCtx.beginPath();
+    boardCtx.moveTo(0.10 * W, 0);
+    boardCtx.lineTo(0.90 * W, 0);
+    boardCtx.lineTo(0.565 * W, 0.075 * H);
+    boardCtx.lineTo(0.435 * W, 0.075 * H);
+    boardCtx.closePath();
+    boardCtx.fill();
+
+    // --- guide lines of the triangular field ---
+    boardCtx.strokeStyle = 'rgba(17,17,17,.22)';
+    boardCtx.lineWidth = 1.5;
+    var apex = toPx(0.5, TOP_Y - ROW_DY * 0.7);
+    var lastY = slotY(ROWS - 1) + ROW_DY * 0.5;
+    var lastHalf = ((ROWS - 1) / 2) * COL_DX + COL_DX * 0.5;
+    boardCtx.beginPath();
+    boardCtx.moveTo(apex.x, apex.y);
+    boardCtx.lineTo((0.5 - lastHalf) * W, lastY * H);
+    boardCtx.moveTo(apex.x, apex.y);
+    boardCtx.lineTo((0.5 + lastHalf) * W, lastY * H);
+    boardCtx.stroke();
+
+    // --- empty pin slots (faint targets, so tapping to add is discoverable) ---
+    var pr = radiusPx(PIN_R);
+    for (var r = 0; r < ROWS; r++) {
+      for (var i = 0; i < pins[r].length; i++) {
+        var p = pinPos[r][i];
+        var px = p.x * W, py = p.y * H;
+        if (pins[r][i]) {
+          boardCtx.fillStyle = INK;
+          boardCtx.beginPath();
+          boardCtx.arc(px, py, pr, 0, Math.PI * 2);
+          boardCtx.fill();
+        } else {
+          boardCtx.strokeStyle = 'rgba(17,17,17,.20)';
+          boardCtx.lineWidth = 1.5;
+          boardCtx.beginPath();
+          boardCtx.arc(px, py, pr * 0.75, 0, Math.PI * 2);
+          boardCtx.stroke();
+        }
+      }
+    }
+
+    // --- bin walls ---
+    boardCtx.strokeStyle = INK;
+    boardCtx.lineWidth = 2;
+    boardCtx.beginPath();
+    for (var e = 0; e <= BINS; e++) {
+      var x = EDGES[e] * W;
+      boardCtx.moveTo(x, BIN_TOP * H);
+      boardCtx.lineTo(x, H);
+    }
+    boardCtx.stroke();
+
+    // --- floor ---
+    boardCtx.beginPath();
+    boardCtx.moveTo(0, H - 1);
+    boardCtx.lineTo(W, H - 1);
+    boardCtx.stroke();
+  }
+
+  function drawBalls() {
+    ballCtx.clearRect(0, 0, W, H);
+    var br = radiusPx(BALL_R);
+
+    // Settled balls are drawn as a histogram column per bin rather than as
+    // a literal pile: the tallest bin always fills the bin area, so the
+    // shape of the distribution reads the same for 20 or for 1200 balls.
+    var maxN = 1;
+    for (var m = 0; m < BINS; m++) maxN = Math.max(maxN, bins[m]);
+    var avail = (1 - BIN_TOP) - 0.012;
+
+    for (var bi = 0; bi < BINS; bi++) {
+      var n = bins[bi];
+      if (n === 0) continue;
+      var frac = n / maxN;
+      var colH = avail * frac;
+      var x0 = EDGES[bi] * W + 2;
+      var x1 = EDGES[bi + 1] * W - 2;
+      var yTop = (1 - colH) * H;
+
+      ballCtx.fillStyle = '#ffffff';
+      ballCtx.strokeStyle = INK;
+      ballCtx.lineWidth = 1.5;
+      ballCtx.beginPath();
+      ballCtx.rect(x0, yTop, x1 - x0, H - yTop);
+      ballCtx.fill();
+      ballCtx.stroke();
+
+      // A few ball outlines on top keep it legible as "these are balls".
+      var per = Math.max(1, Math.floor((x1 - x0) / (br * 2)));
+      var capRows = Math.min(3, Math.ceil(n / per));
+      ballCtx.fillStyle = '#f2e2c0';
+      for (var rr = 0; rr < capRows; rr++) {
+        for (var cc = 0; cc < per; cc++) {
+          var cxp = x0 + br + cc * ((x1 - x0 - br * 2) / Math.max(1, per - 1) || 0);
+          var cyp = yTop + br + rr * br * 2;
+          if (cyp + br > H) continue;
+          ballCtx.beginPath();
+          ballCtx.arc(cxp, cyp, br * 0.82, 0, Math.PI * 2);
+          ballCtx.fill();
+        }
+      }
+    }
+
+    // balls in flight
+    ballCtx.fillStyle = '#c65a2a';
+    ballCtx.strokeStyle = INK;
+    ballCtx.lineWidth = 1.5;
+    for (var j = 0; j < balls.length; j++) {
+      var b = balls[j];
+      ballCtx.beginPath();
+      ballCtx.arc(b.x * W, b.y * H, br, 0, Math.PI * 2);
+      ballCtx.fill();
+      ballCtx.stroke();
+    }
+
+    drawCurve();
+  }
+
+  // A smoothed outline over the bin counts: the emerging "climate".
+  function drawCurve() {
+    var total = binSamples.length;
+    if (total < 12) return;
+    var maxN = 1;
+    for (var i = 0; i < BINS; i++) maxN = Math.max(maxN, bins[i]);
+
+    var pts = [];
+    for (var b = 0; b < BINS; b++) {
+      var cx = (EDGES[b] + EDGES[b + 1]) / 2;
+      var h = (bins[b] / maxN) * (1 - BIN_TOP) * 0.92;
+      pts.push({ x: cx * W, y: (1 - h) * H });
+    }
+
+    ballCtx.strokeStyle = '#28348f';
+    ballCtx.lineWidth = 3;
+    ballCtx.lineJoin = 'round';
+    ballCtx.beginPath();
+    ballCtx.moveTo(pts[0].x, pts[0].y);
+    for (var k = 0; k < pts.length - 1; k++) {
+      var mx = (pts[k].x + pts[k + 1].x) / 2;
+      var my = (pts[k].y + pts[k + 1].y) / 2;
+      ballCtx.quadraticCurveTo(pts[k].x, pts[k].y, mx, my);
+    }
+    ballCtx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    ballCtx.stroke();
+  }
+
+  // ============ STATISTICS ============
+  function updateReadout() {
+    roFallen.textContent = String(binSamples.length);
+
+    if (binSamples.length === 0) {
+      roMean.textContent = '—';
+      roSd.textContent = '—';
+      roExtreme.textContent = '0 %';
+      return;
+    }
+
+    // Report in "bins away from centre" so the numbers read like a
+    // temperature anomaly rather than an internal index.
+    var centre = (BINS - 1) / 2;
+    var sum = 0;
+    for (var i = 0; i < binSamples.length; i++) sum += binSamples[i];
+    var mean = sum / binSamples.length;
+    var varr = 0;
+    for (var j = 0; j < binSamples.length; j++) {
+      var d = binSamples[j] - mean;
+      varr += d * d;
+    }
+    var sd = Math.sqrt(varr / binSamples.length);
+
+    var anomaly = mean - centre;
+    roMean.textContent = (anomaly >= 0 ? '+' : '−') +
+      Math.abs(anomaly).toFixed(2).replace('.', ',');
+    roSd.textContent = sd.toFixed(2).replace('.', ',');
+
+    // "Extreme" = the outer two bins on each side.
+    var ext = 0;
+    for (var k = 0; k < binSamples.length; k++) {
+      if (binSamples[k] <= 1 || binSamples[k] >= BINS - 2) ext++;
+    }
+    var pct = (ext / binSamples.length) * 100;
+    roExtreme.textContent = pct.toFixed(pct < 10 ? 1 : 0).replace('.', ',') + ' %';
+  }
+
+  // ============ DOM ============
+  var roStatus = document.getElementById('ro-status');
+  var roFallen = document.getElementById('ro-fallen');
+  var roMean = document.getElementById('ro-mean');
+  var roSd = document.getElementById('ro-sd');
+  var roExtreme = document.getElementById('ro-extreme');
+  var hintBadge = document.getElementById('stage-hint');
+  var primaryBtn = document.getElementById('sim-primary');
+  var primaryLabel = document.getElementById('sim-primary-label');
+  var primarySub = document.getElementById('sim-primary-sub');
+  var primaryIcon = document.getElementById('sim-primary-icon');
+  var resetBtn = document.getElementById('sim-reset');
+  var countSlider = document.getElementById('ball-count');
+  var countLabel = document.getElementById('ball-count-label');
+  var toolAddBtn = document.getElementById('tool-add');
+  var toolRemoveBtn = document.getElementById('tool-remove');
+  var scenarioRow = document.getElementById('scenario-row');
+  var hint = document.getElementById('hint');
+
+  var ICON_PLAY = '<path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/>';
+  var ICON_PAUSE = '<path d="M8 4h3v16H8zM13 4h3v16h-3z" fill="currentColor" stroke="none"/>';
+
+  // ============ STATE MACHINE ============
+  var IDLE = 'idle', RUNNING = 'running', PAUSED = 'paused', DONE = 'done';
+  var mode = IDLE;
+  var tool = 'add';
+  var interacted = false;
+
+  function setMode(m) {
+    mode = m;
+    if (m === RUNNING) {
+      primaryLabel.textContent = 'Pause';
+      primarySub.textContent = 'Kugelregen anhalten';
+      primaryIcon.innerHTML = ICON_PAUSE;
+      roStatus.textContent = 'Läuft';
+    } else if (m === PAUSED) {
+      primaryLabel.textContent = 'Weiter';
+      primarySub.textContent = 'Kugelregen fortsetzen';
+      primaryIcon.innerHTML = ICON_PLAY;
+      roStatus.textContent = 'Pausiert';
+    } else if (m === DONE) {
+      primaryLabel.textContent = 'Nochmal';
+      primarySub.textContent = 'Weitere Kugeln fallen lassen';
+      primaryIcon.innerHTML = ICON_PLAY;
+      roStatus.textContent = 'Fertig';
+    } else {
+      primaryLabel.textContent = 'Start';
+      primarySub.textContent = 'Kugelregen starten';
+      primaryIcon.innerHTML = ICON_PLAY;
+      roStatus.textContent = 'Bereit';
+    }
+  }
+
+  // ============ PIN EDITING ============
+  function localPoint(ev) {
+    var rect = stage.getBoundingClientRect();
+    var src = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
+    return { x: (src.clientX - rect.left) / rect.width, y: (src.clientY - rect.top) / rect.height };
+  }
+
+  // Nearest lattice slot within a generous touch radius — fingers are
+  // blunt, so the hit area is much larger than the pin itself.
+  function hitSlot(pt) {
+    var best = null, bestD = Infinity;
+    for (var r = 0; r < ROWS; r++) {
+      for (var i = 0; i < pinPos[r].length; i++) {
+        var p = pinPos[r][i];
+        var dx = (p.x - pt.x) * W, dy = (p.y - pt.y) * H;
+        var d = Math.hypot(dx, dy);
+        if (d < bestD) { bestD = d; best = { r: r, i: i }; }
+      }
+    }
+    var touchR = Math.max(22, radiusPx(COL_DX) * 0.62);
+    return bestD <= touchR ? best : null;
+  }
+
+  function onStageTap(ev) {
+    var pt = localPoint(ev);
+    var slot = hitSlot(pt);
+    if (!slot) return;
+    ev.preventDefault();
+
+    var has = pins[slot.r][slot.i];
+    if (tool === 'add' && has) return;
+    if (tool === 'remove' && !has) return;
+    pins[slot.r][slot.i] = (tool === 'add');
+
+    // Balls already counted fell through the *old* board, so mixing them
+    // with the new layout would show a distribution that never existed.
+    // Clear the heap and let the visitor watch the new one build up.
+    if (binSamples.length > 0 || balls.length > 0) {
+      clearBalls();
+      setMode(IDLE);
+      drawBalls();
+      updateReadout();
+    }
+
+    if (!interacted) {
+      interacted = true;
+      hintBadge.classList.remove('attn');
+      hintBadge.hidden = true;
+    }
+    markCustomScenario();
+    drawBoard();
+    updateHint();
+  }
+
+  // Handle the tap on touchstart for responsiveness, and swallow the
+  // synthetic click that follows it, which would otherwise toggle the
+  // same pin a second time and undo the edit.
+  var lastTouchTap = 0;
+  stage.addEventListener('touchstart', function (ev) {
+    lastTouchTap = Date.now();
+    onStageTap(ev);
+  }, { passive: false });
+  stage.addEventListener('click', function (ev) {
+    if (Date.now() - lastTouchTap < 700) return;
+    onStageTap(ev);
+  });
+
+  function updateHint() {
+    hint.textContent = 'Nägel im Brett: ' + countPins() + ' — ' +
+      'ein einzelner Wurf sagt nichts, erst viele Kugeln zeigen das Klima.';
+  }
+
+  // ============ TOOL / SCENARIO CONTROLS ============
+  function setTool(t) {
+    tool = t;
+    toolAddBtn.classList.toggle('active', t === 'add');
+    toolRemoveBtn.classList.toggle('active', t === 'remove');
+  }
+  toolAddBtn.addEventListener('click', function () { setTool('add'); });
+  toolRemoveBtn.addEventListener('click', function () { setTool('remove'); });
+
+  var scenarioBtns = Array.prototype.slice.call(scenarioRow.querySelectorAll('.scenario-btn'));
+
+  function setScenario(name) {
+    pins = scenarioPins(name);
+    scenarioBtns.forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-scenario') === name);
+    });
+    clearBalls();
+    drawBoard();
+    drawBalls();
+    updateReadout();
+    updateHint();
+    setMode(IDLE);
+  }
+
+  function markCustomScenario() {
+    scenarioBtns.forEach(function (b) { b.classList.remove('active'); });
+  }
+
+  scenarioBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      setScenario(b.getAttribute('data-scenario'));
+      interacted = true;
+      hintBadge.classList.remove('attn');
+      hintBadge.hidden = true;
+    });
+  });
+
+  countSlider.addEventListener('input', function () {
+    countLabel.textContent = countSlider.value;
+  });
+
+  // ============ RUN CONTROL ============
+  function clearBalls() {
+    balls = [];
+    bins = new Array(BINS).fill(0);
+    binSamples = [];
+    toRelease = 0;
+    releaseTimer = 0;
+  }
+
+  function startRun() {
+    if (mode === IDLE || mode === DONE) {
+      // A fresh run keeps the pins but empties the board, so the new
+      // distribution is not mixed with the previous one.
+      clearBalls();
+      toRelease = parseInt(countSlider.value, 10);
+      drawBalls();
+      updateReadout();
+    }
+    setMode(RUNNING);
+  }
+
+  primaryBtn.addEventListener('click', function () {
+    if (mode === RUNNING) setMode(PAUSED);
+    else startRun();
+  });
+
+  resetBtn.addEventListener('click', function () {
+    pins = defaultPins();
+    scenarioBtns.forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-scenario') === 'normal');
+    });
+    clearBalls();
+    setMode(IDLE);
+    drawBoard();
+    drawBalls();
+    updateReadout();
+    updateHint();
+  });
+
+  // ============ ANIMATION LOOP ============
+  var lastT = 0;
+
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    if (!lastT) lastT = ts;
+    var dt = Math.min((ts - lastT) / 1000, 0.05);
+    lastT = ts;
+
+    if (mode !== RUNNING) return;
+
+    // release queued balls at a steady rate
+    releaseTimer += dt;
+    while (releaseTimer >= RELEASE_EVERY && toRelease > 0 && balls.length < MAX_LIVE) {
+      releaseTimer -= RELEASE_EVERY;
+      spawnBall();
+      toRelease--;
+    }
+
+    for (var s = 0; s < SUBSTEPS; s++) {
+      for (var i = balls.length - 1; i >= 0; i--) {
+        var b = balls[i];
+        stepBall(b);
+        if (b.settled) {
+          bins[b.bin]++;
+          binSamples.push(b.bin);
+          balls.splice(i, 1);
+        }
+      }
+    }
+
+    drawBalls();
+    updateReadout();
+
+    if (toRelease === 0 && balls.length === 0) setMode(DONE);
+  }
+
+  // ============ VIEW MODE (phone / desktop) ============
+  var VIEW_STORAGE_KEY = 'scapeViewMode';
+  var MOBILE_QUERY = '(max-width: 699px)';
+  var viewToggleBtn = document.getElementById('view-toggle');
+
+  function setViewMode(m) {
+    document.documentElement.setAttribute('data-view', m);
+    viewToggleBtn.textContent = m === 'mobile' ? 'Desktop-Ansicht' : 'Mobile-Ansicht';
+    viewToggleBtn.setAttribute('aria-label', m === 'mobile' ? 'Zur Desktop-Ansicht wechseln' : 'Zur Mobile-Ansicht wechseln');
+  }
+
+  function relayout() {
+    layout();
+    drawBoard();
+    drawBalls();
+  }
+
+  function setupViewToggle() {
+    setViewMode(document.documentElement.getAttribute('data-view') || 'mobile');
+
+    viewToggleBtn.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-view') === 'mobile' ? 'desktop' : 'mobile';
+      setViewMode(next);
+      try { localStorage.setItem(VIEW_STORAGE_KEY, next); } catch (e) {}
+      relayout();
+    });
+
+    var mql = window.matchMedia(MOBILE_QUERY);
+    function onViewportChange(e) {
+      var hasOverride = false;
+      try { hasOverride = localStorage.getItem(VIEW_STORAGE_KEY) !== null; } catch (err) {}
+      if (!hasOverride) {
+        setViewMode(e.matches ? 'mobile' : 'desktop');
+        relayout();
+      }
+    }
+    if (mql.addEventListener) mql.addEventListener('change', onViewportChange);
+  }
+
+  // ============ INIT / RESIZE ============
+  function init() {
+    buildLattice();
+    pins = defaultPins();
+    setupViewToggle();
+    layout();
+    setTool('add');
+    setMode(IDLE);
+    countLabel.textContent = countSlider.value;
+    drawBoard();
+    drawBalls();
+    updateReadout();
+    updateHint();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', relayout);
+  window.addEventListener('orientationchange', function () {
+    setTimeout(relayout, 200);
+  });
+
+  init();
+})();
+</script>
+
 </body>
 </html>
