@@ -460,7 +460,7 @@
         Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 1000 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
       </p>
       <p class="blurb">
-        <b>Probiere es aus:</b> Entferne eine ganze Nagelreihe auf einer Seite und schau, wohin die Kugeln wandern. Oder w&auml;hle oben ein Szenario &mdash; <em>W&auml;rmer</em> verschiebt das Mittel, <em>Mehr Extreme</em> verbreitert die Verteilung. Beobachte dabei die Kennzahlen unter dem Brett: Mittelwert, Streuung und den Anteil der Kugeln in den extremen Randbereichen.
+        <b>Probiere es aus:</b> Entferne eine ganze Nagelreihe auf einer Seite und schau, wohin die Kugeln wandern. Oder w&auml;hle oben ein Szenario und vergleiche die Kennzahlen unter dem Brett. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um rund 40 Prozent, und der Anteil der Kugeln in den &auml;u&szlig;eren R&auml;ndern steigt von etwa 1 auf gut 5 Prozent. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
       </p>
     </div>
     <div class="build-tag">build v1</div>
@@ -582,8 +582,8 @@
   var balls = [];        // live balls in flight
   var toRelease = 0;     // how many are still queued
   var releaseTimer = 0;
-  var RELEASE_EVERY = 0.055; // seconds between drops
-  var MAX_LIVE = 90;
+  var releaseEvery = 0.055;  // seconds between drops, set per run
+  var MAX_LIVE = 120;        // cap on balls in flight at once
 
   function spawnBall() {
     // k = how many times this ball has gone right so far. After row r the
@@ -601,14 +601,20 @@
     });
   }
 
-  // Height of the drawn histogram column of a bin, in unit space. A ball is
-  // absorbed when it reaches the top of its column, so what stops the ball
-  // is exactly what the visitor sees.
-  function heapTop(bi) {
+  // Vertical room a full histogram column may occupy. The absorbing height,
+  // the drawn columns and the curve overlay all derive from this one value,
+  // so a ball always stops exactly where the visitor sees its column end.
+  var COL_AVAIL = (1 - BIN_TOP) - 0.012;
+
+  function binMax() {
     var maxN = 1;
     for (var m = 0; m < BINS; m++) maxN = Math.max(maxN, bins[m]);
-    var avail = (1 - BIN_TOP) - 0.012;
-    return 1 - avail * (bins[bi] / maxN);
+    return maxN;
+  }
+
+  // Height of the drawn histogram column of a bin, in unit space.
+  function heapTop(bi) {
+    return 1 - COL_AVAIL * (bins[bi] / binMax());
   }
 
   function stepBall(b) {
@@ -755,15 +761,13 @@
     // Settled balls are drawn as a histogram column per bin rather than as
     // a literal pile: the tallest bin always fills the bin area, so the
     // shape of the distribution reads the same for 20 or for 1200 balls.
-    var maxN = 1;
-    for (var m = 0; m < BINS; m++) maxN = Math.max(maxN, bins[m]);
-    var avail = (1 - BIN_TOP) - 0.012;
+    var maxN = binMax();
 
     for (var bi = 0; bi < BINS; bi++) {
       var n = bins[bi];
       if (n === 0) continue;
       var frac = n / maxN;
-      var colH = avail * frac;
+      var colH = COL_AVAIL * frac;
       var x0 = EDGES[bi] * W + 2;
       var x1 = EDGES[bi + 1] * W - 2;
       var yTop = (1 - colH) * H;
@@ -811,13 +815,13 @@
   function drawCurve() {
     var total = binSamples.length;
     if (total < 12) return;
-    var maxN = 1;
-    for (var i = 0; i < BINS; i++) maxN = Math.max(maxN, bins[i]);
+    var maxN = binMax();
 
     var pts = [];
     for (var b = 0; b < BINS; b++) {
       var cx = (EDGES[b] + EDGES[b + 1]) / 2;
-      var h = (bins[b] / maxN) * (1 - BIN_TOP) * 0.92;
+      // Same scale the histogram columns use, so the curve traces their tops.
+      var h = (bins[b] / maxN) * COL_AVAIL;
       pts.push({ x: cx * W, y: (1 - h) * H });
     }
 
@@ -970,11 +974,7 @@
       updateReadout();
     }
 
-    if (!interacted) {
-      interacted = true;
-      hintBadge.classList.remove('attn');
-      hintBadge.hidden = true;
-    }
+    dismissHint();
     markCustomScenario();
     drawBoard();
     updateHint();
@@ -1029,9 +1029,7 @@
   scenarioBtns.forEach(function (b) {
     b.addEventListener('click', function () {
       setScenario(b.getAttribute('data-scenario'));
-      interacted = true;
-      hintBadge.classList.remove('attn');
-      hintBadge.hidden = true;
+      dismissHint();
     });
   });
 
@@ -1048,12 +1046,23 @@
     releaseTimer = 0;
   }
 
+  function dismissHint() {
+    if (interacted) return;
+    interacted = true;
+    hintBadge.classList.remove('attn');
+    hintBadge.hidden = true;
+  }
+
   function startRun() {
+    dismissHint();
     if (mode === IDLE || mode === DONE) {
       // A fresh run keeps the pins but empties the board, so the new
       // distribution is not mixed with the previous one.
       clearBalls();
       toRelease = parseInt(countSlider.value, 10);
+      // Keep a run to roughly ten seconds whatever the ball count, so that
+      // 1200 balls stay watchable while 20 still fall one visible at a time.
+      releaseEvery = Math.max(0.006, Math.min(0.08, 10 / toRelease));
       drawBalls();
       updateReadout();
     }
@@ -1091,8 +1100,8 @@
 
     // release queued balls at a steady rate
     releaseTimer += dt;
-    while (releaseTimer >= RELEASE_EVERY && toRelease > 0 && balls.length < MAX_LIVE) {
-      releaseTimer -= RELEASE_EVERY;
+    while (releaseTimer >= releaseEvery && toRelease > 0 && balls.length < MAX_LIVE) {
+      releaseTimer -= releaseEvery;
       spawnBall();
       toRelease--;
     }
@@ -1168,6 +1177,7 @@
     updateReadout();
     updateHint();
     requestAnimationFrame(frame);
+    setTimeout(function () { hintBadge.classList.remove('attn'); }, 9000);
   }
 
   window.addEventListener('resize', relayout);
