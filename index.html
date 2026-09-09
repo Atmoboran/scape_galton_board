@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-<title>SCAPE&deg; &mdash; Wetter ist ein Wurf, Klima ist die Verteilung</title>
+<title>SCAPE&deg; &mdash; Klima ist Statistik</title>
 <meta name="description" content="Ein interaktives Galton-Brett im Browser: setze und entferne Nagel, lass Kugeln fallen und beobachte, wie sich die Verteilung verschiebt und verbreitert &mdash; ein SCAPE&deg;-Projekt uber Wetter, Klima und Klimawandel." />
 <meta name="theme-color" content="#f2e2c0" />
 <script>
@@ -239,7 +239,9 @@
     background:var(--paper); color:var(--ink);
   }
   #sim-primary{ background:var(--bright-yellow); flex:1.5; }
-  #sim-reset{ flex:1; }
+  #sim-single{ flex:1.1; }
+  #sim-reset{ flex:.9; }
+  .btn-row button{ padding:14px 8px; font-size:13.5px; }
   .btn-row button svg{ width:19px; height:19px; flex:none; }
   .btn-row button .sub{
     display:block; font-size:10.5px; font-weight:600; text-transform:none; letter-spacing:0; opacity:.75; margin-top:1px;
@@ -328,14 +330,14 @@
       </svg>
     </div>
     <div class="poster-copy">
-      <h1 class="poster-title">Wetter ist ein Wurf</h1>
-      <p class="poster-tagline">Klima ist die Verteilung. Verschiebe die N&auml;gel &mdash; und die Verteilung wandert mit.</p>
+      <h1 class="poster-title">Klima ist Statistik</h1>
+      <p class="poster-tagline">Eine Kugel ist Wetter. Der Berg aus tausend Kugeln ist Klima. Verschiebe die N&auml;gel &mdash; und der Berg wandert mit.</p>
     </div>
   </div>
 
   <main>
     <div class="intro-blurb">
-      <p class="blurb"><b>So funktioniert's:</b> Jede Kugel ist <b>ein Wetterereignis</b> &mdash; ein einzelner Tag, zuf&auml;llig und unvorhersagbar. Der Berg, den viele Kugeln zusammen bilden, ist das <b>Klima</b>. Tippe ins Brett, um N&auml;gel zu <b>setzen oder zu entfernen</b>, und starte dann den Kugelregen: Die N&auml;gel sind die Spielregeln des Systems &mdash; &auml;nderst du sie, &auml;ndert sich die ganze Verteilung.</p>
+      <p class="blurb"><b>So funktioniert's:</b> Jede Kugel ist <b>ein Wetterereignis</b> &mdash; ein einzelner Tag, zuf&auml;llig und unvorhersagbar. Der Berg, den viele Kugeln zusammen bilden, ist das <b>Klima</b>. Mit <b>Einzeln</b> schickst du eine einzige Kugel los und siehst, wie wenig sie verr&auml;t; mit <b>Start</b> kommt ein ganzer Schwall. Du kannst jederzeit <b>weitere Kugeln zugeben</b> und dabei <b>N&auml;gel setzen oder entfernen</b> &mdash; der Berg bleibt liegen und biegt sich sichtbar in die neue Form. Die N&auml;gel sind die Spielregeln des Systems: &auml;nderst du sie, &auml;ndert sich die ganze Verteilung.</p>
     </div>
 
     <div class="section-label first">Szenario</div>
@@ -345,7 +347,7 @@
       <button class="scenario-btn" data-scenario="extreme">Mehr Extreme</button>
     </div>
 
-    <div class="section-label">N&auml;gel bearbeiten &mdash; tippe ins Brett</div>
+    <div class="section-label">N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</div>
     <div class="seg-row" id="tool-row">
       <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
       <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
@@ -361,14 +363,14 @@
 
     <div class="slider-row">
       <div class="slider-head">
-        <span>Anzahl Kugeln</span><b id="ball-count-label">300</b>
+        <span>Kugeln pro Start</span><b id="ball-count-label">200</b>
       </div>
-      <input type="range" id="ball-count" min="20" max="1200" step="20" value="300" />
+      <input type="range" id="ball-count" min="10" max="1000" step="10" value="200" />
     </div>
 
     <div class="readout" id="readout">
       <div>Status<b id="ro-status">Bereit</b></div>
-      <div>Gefallen<b id="ro-fallen">0</b></div>
+      <div>Kugeln gesamt<b id="ro-fallen">0</b></div>
       <div>Mittelwert<b id="ro-mean">&mdash;</b></div>
       <div>Streuung<b id="ro-sd">&mdash;</b></div>
       <div>Extreme<b id="ro-extreme">0 %</b></div>
@@ -379,7 +381,14 @@
         <svg id="sim-primary-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/></svg>
         <span>
           <span id="sim-primary-label">Start</span>
-          <span class="sub" id="sim-primary-sub">Kugelregen starten</span>
+          <span class="sub" id="sim-primary-sub">Kugeln fallen lassen</span>
+        </span>
+      </button>
+      <button id="sim-single">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="3" fill="currentColor" stroke="none"/><path d="M12 12v7M9 16l3 3 3-3"/></svg>
+        <span>
+          <span>Einzeln</span>
+          <span class="sub">Eine Kugel</span>
         </span>
       </button>
       <button id="sim-reset">
@@ -388,6 +397,7 @@
       </button>
     </div>
     <div class="hint" id="hint">Ein einzelner Wurf sagt nichts. Erst viele Kugeln zeigen das Klima.</div>
+    <div class="hint" style="opacity:.62; margin-top:6px;">Nur im hellen Dreieck kommen Kugeln vorbei &mdash; nur dort wirken N&auml;gel.</div>
 
     <div class="explainer">
       <h2>Wetter oder Klima?</h2>
@@ -487,36 +497,69 @@
   var BIN_TOP = 0.80;       // where the bin walls begin
   var PIN_R = 0.009;        // pin radius
   var BALL_R = 0.011;       // ball radius
-  var GRAVITY = 2.6;        // unit-space gravity
-  var MAX_V = 0.55;         // fall-speed cap: leaves time to reach the next column
-  var STEER = 26.0;         // how briskly a ball slides to its chosen column
+  var GRAVITY = 9.0;        // unit-space gravity
+  var BOUNCE = 0.10;        // upward kick off a pin, so the hop is a real arc
   var DRIFT_KEEP = 0.6;     // chance a ball keeps its sideways momentum in a gap
   var SUBSTEPS = 2;
   var DT = 1 / 60 / SUBSTEPS;
 
   // ============ PIN GRID ============
-  // Pins live on a fixed lattice so that "add" and "remove" are just a
-  // boolean toggle per slot. Row r has r+1 slots, centred on x = 0.5.
+  // Pins live on a lattice so that "add" and "remove" are a boolean toggle
+  // per slot. Row r is offset by half a spacing relative to row r-1 (that
+  // stagger is what makes a Galton board work), but every row spans the
+  // whole board, not just the classic triangle -- so a visitor can put a
+  // pin anywhere, including out on the flanks where the triangle has none.
   var pins = [];            // array of rows, each an array of booleans
   var pinPos = [];          // matching lattice positions {x,y}
+  var SLOT0 = [];           // old-style index of slot 0 in each row
+
+  var EDGE_PAD = 0.135;     // keep the outermost slots inside the frame
 
   function slotX(row, i) { return 0.5 + (i - row / 2) * COL_DX; }
   function slotY(row) { return TOP_Y + row * ROW_DY; }
 
   function buildLattice() {
     pinPos = [];
+    SLOT0 = [];
     for (var r = 0; r < ROWS; r++) {
+      // widest span that still fits the frame, in old-style indices
+      var iMin = Math.ceil((EDGE_PAD - 0.5) / COL_DX + r / 2);
+      var iMax = Math.floor((1 - EDGE_PAD - 0.5) / COL_DX + r / 2);
+      SLOT0.push(iMin);
       var rowPos = [];
-      for (var i = 0; i <= r; i++) rowPos.push({ x: slotX(r, i), y: slotY(r) });
+      for (var i = iMin; i <= iMax; i++) rowPos.push({ x: slotX(r, i), y: slotY(r) });
       pinPos.push(rowPos);
     }
   }
 
+  // The physics addresses pins by the ball's column k, which is an
+  // old-style index; these convert between that and the array index.
+  function slotIndex(r, k) { return k - SLOT0[r]; }
+
+  // A ball enters at the top and moves at most one column per row, so at
+  // row r it can only be in column 0..r. Slots outside that wedge exist on
+  // the lattice but no ball can ever reach them -- they are drawn faintly
+  // and refuse a pin, so a visitor never places one that does nothing.
+  function slotReachable(r, j) {
+    var k = j + SLOT0[r];
+    return k >= 0 && k <= r;
+  }
+
+  function pinAt(r, k) {
+    var j = slotIndex(r, k);
+    if (j < 0 || j >= pins[r].length) return false;
+    return pins[r][j];
+  }
+
   function defaultPins() {
+    // The classic triangle: row r carries pins at old-style indices 0..r.
     var p = [];
     for (var r = 0; r < ROWS; r++) {
       var row = [];
-      for (var i = 0; i <= r; i++) row.push(true);
+      for (var j = 0; j < pinPos[r].length; j++) {
+        var k = j + SLOT0[r];
+        row.push(k >= 0 && k <= r);
+      }
       p.push(row);
     }
     return p;
@@ -527,14 +570,18 @@
   // simulation itself, exactly as it does when a visitor edits by hand.
   function scenarioPins(name) {
     var p = defaultPins();
-    var r, i, rel;
+    var r, k, j, rel;
+    function clear(r, k) {
+      var j = slotIndex(r, k);
+      if (j >= 0 && j < p[r].length) p[r][j] = false;
+    }
     if (name === 'warm') {
-      // Thin out the right flank. A ball drifting right there meets no pin
-      // to send it back, so the whole heap slides towards the warm end --
-      // a shift of the mean with the shape largely intact.
+      // Thin out the right flank of the triangle. A ball drifting right
+      // there meets no pin to send it back, so the whole heap slides
+      // towards the warm end -- a shift of the mean, shape largely intact.
       for (r = 2; r < ROWS; r++) {
-        for (i = 0; i <= r; i++) {
-          if (r > 0 && i / r > 0.66) p[r][i] = false;
+        for (k = 0; k <= r; k++) {
+          if (r > 0 && k / r > 0.66) clear(r, k);
         }
       }
     } else if (name === 'extreme') {
@@ -542,9 +589,9 @@
       // instead of being nudged back, so the mean stays put while the
       // distribution grows wider and the tails get heavier.
       for (r = 3; r < ROWS; r++) {
-        for (i = 0; i <= r; i++) {
-          rel = i / r;
-          if (rel < 0.22 || rel > 0.78) p[r][i] = false;
+        for (k = 0; k <= r; k++) {
+          rel = k / r;
+          if (rel < 0.22 || rel > 0.78) clear(r, k);
         }
       }
     }
@@ -590,13 +637,14 @@
     // ball sits in the gap at lattice position slotX(r+1, k) -- tracking k
     // directly is what makes the board exactly binomial.
     balls.push({
-      x: 0.5 + (Math.random() - 0.5) * 0.006,
+      x: 0.5,
       y: 0.045,
+      vx: 0,
       vy: 0.12,
       k: 0,
       drift: 0,
       nextRow: 0,
-      target: 0.5,
+      lastTarget: 0.5,
       settled: false
     });
   }
@@ -617,19 +665,28 @@
     return 1 - COL_AVAIL * (bins[bi] / binMax());
   }
 
+  // Time for one hop: solve ROW_DY = vy0*t + g*t^2/2 for t, so the ball
+  // leaves a pin on a parabola that lands exactly on the next pin down.
+  function hopTime(vy0) {
+    var a = GRAVITY / 2;
+    return (-vy0 + Math.sqrt(vy0 * vy0 + 4 * a * ROW_DY)) / (2 * a);
+  }
+
   function stepBall(b) {
     b.vy += GRAVITY * DT;
-    if (b.vy > MAX_V) b.vy = MAX_V;
-    b.x += (b.target - b.x) * STEER * DT;
+    b.x += b.vx * DT;
     b.y += b.vy * DT;
 
-    // --- reaching the next pin row: decide left or right ---
-    if (b.nextRow < ROWS && b.y >= slotY(b.nextRow) - PIN_R - BALL_R * 0.5) {
+    // --- reaching pin k of the next row ---
+    // After r rows with k rights the ball sits exactly on pin k of row r,
+    // so the pin it meets is known and needs no searching.
+    if (b.nextRow < ROWS && b.y >= slotY(b.nextRow) - PIN_R - BALL_R) {
       var r = b.nextRow;
-      var pi = Math.max(0, Math.min(r, b.k));
-      if (pins[r][pi]) {
-        // A pin is here: a fair coin decides, and the bounce sets the
-        // direction the ball is now travelling in.
+      b.x = slotX(r, b.k);
+      b.y = slotY(r) - PIN_R - BALL_R * 0.5;
+
+      if (pinAt(r, b.k)) {
+        // A pin is here: a fair coin decides which way it bounces.
         if (Math.random() < 0.5) { b.k++; b.drift = 1; }
         else { b.drift = -1; }
       } else {
@@ -640,15 +697,27 @@
         else if (b.drift === 0 && Math.random() < 0.5) b.k++;
         if (Math.random() > DRIFT_KEEP) b.drift = 0;
       }
-      b.k = Math.max(0, Math.min(r + 1, b.k));
-      b.target = slotX(r + 1, b.k);
+
+      // Launch the next hop: an upward kick plus exactly the sideways
+      // speed needed to arrive on the following pin.
+      var nxt = slotX(r + 1, b.k);
+      b.vy = -BOUNCE;
+      b.vx = (nxt - b.x) / hopTime(b.vy);
       b.nextRow++;
+      if (b.nextRow >= ROWS) b.lastTarget = nxt;
     }
 
     // --- landing ---
-    // Only once every pin row is behind it, so a heap growing in the middle
-    // can never catch a ball that is still choosing its column.
-    if (b.nextRow < ROWS || b.y < BIN_TOP) return;
+    // Past the last pin row the ball drops straight down the column it
+    // committed to; letting it keep drifting sideways here would smear the
+    // result across neighbouring bins and flatten the curve.
+    if (b.nextRow < ROWS) return;
+    if (b.vx !== 0 && Math.abs(b.x - b.lastTarget) < 0.004) {
+      b.x = b.lastTarget;
+      b.vx = 0;
+    }
+    if (b.y < BIN_TOP) return;
+
     var bIdx = binIndex(b.x);
     var top = heapTop(bIdx);
     if (b.y + BALL_R >= top) {
@@ -702,12 +771,24 @@
     boardCtx.closePath();
     boardCtx.fill();
 
-    // --- guide lines of the triangular field ---
-    boardCtx.strokeStyle = 'rgba(17,17,17,.22)';
-    boardCtx.lineWidth = 1.5;
+    // --- the reachable wedge ---
+    // A ball enters at the apex and moves at most one column per row, so
+    // this triangle is exactly the region it can ever occupy. Tinting it
+    // makes the tappable area obvious without a word of explanation.
     var apex = toPx(0.5, TOP_Y - ROW_DY * 0.7);
     var lastY = slotY(ROWS - 1) + ROW_DY * 0.5;
     var lastHalf = ((ROWS - 1) / 2) * COL_DX + COL_DX * 0.5;
+
+    boardCtx.fillStyle = 'rgba(255,255,255,.45)';
+    boardCtx.beginPath();
+    boardCtx.moveTo(apex.x, apex.y);
+    boardCtx.lineTo((0.5 - lastHalf) * W, lastY * H);
+    boardCtx.lineTo((0.5 + lastHalf) * W, lastY * H);
+    boardCtx.closePath();
+    boardCtx.fill();
+
+    boardCtx.strokeStyle = 'rgba(17,17,17,.22)';
+    boardCtx.lineWidth = 1.5;
     boardCtx.beginPath();
     boardCtx.moveTo(apex.x, apex.y);
     boardCtx.lineTo((0.5 - lastHalf) * W, lastY * H);
@@ -715,10 +796,13 @@
     boardCtx.lineTo((0.5 + lastHalf) * W, lastY * H);
     boardCtx.stroke();
 
-    // --- empty pin slots (faint targets, so tapping to add is discoverable) ---
+    // --- pins, and the empty slots that can still take one ---
+    // Only slots a ball can actually reach are offered as targets; the rest
+    // of the lattice is left blank so nobody places a pin that does nothing.
     var pr = radiusPx(PIN_R);
     for (var r = 0; r < ROWS; r++) {
       for (var i = 0; i < pins[r].length; i++) {
+        if (!slotReachable(r, i)) continue;
         var p = pinPos[r][i];
         var px = p.x * W, py = p.y * H;
         if (pins[r][i]) {
@@ -727,10 +811,10 @@
           boardCtx.arc(px, py, pr, 0, Math.PI * 2);
           boardCtx.fill();
         } else {
-          boardCtx.strokeStyle = 'rgba(17,17,17,.20)';
+          boardCtx.strokeStyle = 'rgba(17,17,17,.28)';
           boardCtx.lineWidth = 1.5;
           boardCtx.beginPath();
-          boardCtx.arc(px, py, pr * 0.75, 0, Math.PI * 2);
+          boardCtx.arc(px, py, pr * 0.8, 0, Math.PI * 2);
           boardCtx.stroke();
         }
       }
@@ -841,7 +925,12 @@
 
   // ============ STATISTICS ============
   function updateReadout() {
-    roFallen.textContent = String(binSamples.length);
+    // Show what is still on its way, so topping the board up mid-run reads
+    // as "more coming" rather than looking like nothing happened.
+    var pending = toRelease + balls.length;
+    roFallen.textContent = pending > 0
+      ? binSamples.length + ' (+' + pending + ')'
+      : String(binSamples.length);
 
     if (binSamples.length === 0) {
       roMean.textContent = '—';
@@ -888,6 +977,7 @@
   var primaryLabel = document.getElementById('sim-primary-label');
   var primarySub = document.getElementById('sim-primary-sub');
   var primaryIcon = document.getElementById('sim-primary-icon');
+  var singleBtn = document.getElementById('sim-single');
   var resetBtn = document.getElementById('sim-reset');
   var countSlider = document.getElementById('ball-count');
   var countLabel = document.getElementById('ball-count-label');
@@ -918,13 +1008,15 @@
       primaryIcon.innerHTML = ICON_PLAY;
       roStatus.textContent = 'Pausiert';
     } else if (m === DONE) {
-      primaryLabel.textContent = 'Nochmal';
-      primarySub.textContent = 'Weitere Kugeln fallen lassen';
+      // Nothing is finished here -- the board simply ran out of queued
+      // balls. The button invites topping the same distribution up again.
+      primaryLabel.textContent = 'Mehr';
+      primarySub.textContent = 'Weitere Kugeln zugeben';
       primaryIcon.innerHTML = ICON_PLAY;
-      roStatus.textContent = 'Fertig';
+      roStatus.textContent = binSamples.length > 0 ? 'Bereit für mehr' : 'Bereit';
     } else {
       primaryLabel.textContent = 'Start';
-      primarySub.textContent = 'Kugelregen starten';
+      primarySub.textContent = 'Kugeln fallen lassen';
       primaryIcon.innerHTML = ICON_PLAY;
       roStatus.textContent = 'Bereit';
     }
@@ -943,6 +1035,7 @@
     var best = null, bestD = Infinity;
     for (var r = 0; r < ROWS; r++) {
       for (var i = 0; i < pinPos[r].length; i++) {
+        if (!slotReachable(r, i)) continue;
         var p = pinPos[r][i];
         var dx = (p.x - pt.x) * W, dy = (p.y - pt.y) * H;
         var d = Math.hypot(dx, dy);
@@ -964,15 +1057,9 @@
     if (tool === 'remove' && !has) return;
     pins[slot.r][slot.i] = (tool === 'add');
 
-    // Balls already counted fell through the *old* board, so mixing them
-    // with the new layout would show a distribution that never existed.
-    // Clear the heap and let the visitor watch the new one build up.
-    if (binSamples.length > 0 || balls.length > 0) {
-      clearBalls();
-      setMode(IDLE);
-      drawBalls();
-      updateReadout();
-    }
+    // The heap is deliberately kept: editing the board while balls keep
+    // arriving is how a visitor sees the distribution bend towards the new
+    // layout. Reset clears it when they want a clean comparison.
 
     dismissHint();
     markCustomScenario();
@@ -994,8 +1081,8 @@
   });
 
   function updateHint() {
-    hint.textContent = 'Nägel im Brett: ' + countPins() + ' — ' +
-      'ein einzelner Wurf sagt nichts, erst viele Kugeln zeigen das Klima.';
+    hint.textContent = 'Nägel im Brett: ' + countPins() +
+      ' — ein einzelner Wurf sagt nichts, erst viele Kugeln zeigen das Klima.';
   }
 
   // ============ TOOL / SCENARIO CONTROLS ============
@@ -1010,6 +1097,9 @@
   var scenarioBtns = Array.prototype.slice.call(scenarioRow.querySelectorAll('.scenario-btn'));
 
   function setScenario(name) {
+    // A preset swaps the whole board, so the heap is cleared: the point of
+    // the presets is to compare one finished distribution with another.
+    // Hand-editing single pins deliberately keeps the heap instead.
     pins = scenarioPins(name);
     scenarioBtns.forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-scenario') === name);
@@ -1053,26 +1143,34 @@
     hintBadge.hidden = true;
   }
 
+  function queueBalls(n) {
+    // Balls are always *added* to the board. Nothing is cleared, so a
+    // visitor can keep topping up the same distribution -- and can edit
+    // the pins in between, which is the whole point of the exhibit.
+    toRelease += n;
+    releaseEvery = Math.max(0.006, Math.min(0.07, 8 / Math.max(1, n)));
+  }
+
   function startRun() {
     dismissHint();
-    if (mode === IDLE || mode === DONE) {
-      // A fresh run keeps the pins but empties the board, so the new
-      // distribution is not mixed with the previous one.
-      clearBalls();
-      toRelease = parseInt(countSlider.value, 10);
-      // Keep a run to roughly ten seconds whatever the ball count, so that
-      // 1200 balls stay watchable while 20 still fall one visible at a time.
-      releaseEvery = Math.max(0.006, Math.min(0.08, 10 / toRelease));
-      drawBalls();
-      updateReadout();
-    }
+    queueBalls(parseInt(countSlider.value, 10));
+    setMode(RUNNING);
+  }
+
+  function dropSingle() {
+    dismissHint();
+    queueBalls(1);
+    releaseTimer = releaseEvery;   // release it immediately
     setMode(RUNNING);
   }
 
   primaryBtn.addEventListener('click', function () {
-    if (mode === RUNNING) setMode(PAUSED);
-    else startRun();
+    if (mode === RUNNING) { setMode(PAUSED); return; }
+    if (mode === PAUSED && toRelease > 0) { setMode(RUNNING); return; }
+    startRun();
   });
+
+  singleBtn.addEventListener('click', dropSingle);
 
   resetBtn.addEventListener('click', function () {
     pins = defaultPins();
