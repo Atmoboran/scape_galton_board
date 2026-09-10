@@ -128,6 +128,24 @@
     margin:26px 0 12px;
   }
   .section-label.first{ margin-top:0; }
+  .section-label.with-help{
+    display:flex; align-items:center; gap:8px; justify-content:space-between;
+  }
+  #nail-help{
+    flex:none; width:20px; height:20px; padding:0;
+    border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-family:inherit; font-weight:800; font-size:12px; line-height:1;
+    border-radius:50%; cursor:pointer;
+  }
+  #nail-help[aria-expanded="true"]{ background:var(--ink); color:var(--paper); }
+  .help-pop{
+    border:2px solid var(--ink); background:var(--pastel-yellow);
+    padding:11px 13px; margin:0 0 10px;
+  }
+  .help-pop p{
+    margin:0 0 8px; font-size:12.5px; line-height:1.5;
+  }
+  .help-pop p:last-child{ margin-bottom:0; }
 
   /* ============ EXPLAINER / BLURB ============ */
   .explainer{ margin:30px 0 10px; }
@@ -193,10 +211,16 @@
 
   /* ============ READOUT ============ */
   .readout{
-    display:flex; gap:14px 22px; flex-wrap:wrap;
-    margin-bottom:18px; padding:16px 0; border-top:2px solid var(--ink); border-bottom:2px solid var(--ink);
+    display:flex; gap:10px; flex-wrap:nowrap;
+    margin-bottom:18px; padding:14px 0; border-top:2px solid var(--ink); border-bottom:2px solid var(--ink);
   }
-  .readout div{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  /* Four equal columns on one line: the labels are short enough to fit even
+     on a narrow phone once they may break across two lines. */
+  .readout div{
+    flex:1 1 0; min-width:0;
+    font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    line-height:1.25;
+  }
   .readout b{ display:block; font-size:14px; font-weight:700; letter-spacing:0; margin-top:3px; text-transform:none; }
 
   /* ============ SLIDER ============ */
@@ -347,8 +371,14 @@
       <button class="scenario-btn" data-scenario="extreme">Mehr Extreme</button>
     </div>
 
-    <div class="section-label">N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</div>
-    <p class="blurb" style="font-size:12.5px; margin:-4px 0 10px; opacity:.75;">Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden. Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel. So ein eingekeilter Nagel trifft die Kugel schr&auml;g und schiebt sie meist weiter nach au&szlig;en.</p>
+    <div class="section-label with-help">
+      <span>N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</span>
+      <button type="button" id="nail-help" aria-expanded="false" aria-controls="nail-help-text" aria-label="Erkl&auml;rung anzeigen">?</button>
+    </div>
+    <div class="help-pop" id="nail-help-text" hidden>
+      <p>Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden.</p>
+      <p>Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel. So ein eingekeilter Nagel trifft die Kugel schr&auml;g und schiebt sie meist weiter nach au&szlig;en.</p>
+    </div>
     <div class="seg-row" id="tool-row">
       <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
       <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
@@ -367,12 +397,10 @@
         <span>Kugeln pro Start</span><b id="ball-count-label">365</b>
       </div>
       <input type="range" id="ball-count" min="5" max="365" step="5" value="365" />
-      <p class="blurb" id="count-note" style="font-size:12px; margin:6px 0 0; opacity:.7;">365 Kugeln &mdash; ein Jahr aus lauter einzelnen Wettertagen.</p>
     </div>
 
     <div class="readout" id="readout">
-      <div>Status<b id="ro-status">Bereit</b></div>
-      <div>Kugeln gesamt<b id="ro-fallen">0</b></div>
+      <div>Kugeln<b id="ro-fallen">0</b></div>
       <div>Mittelwert<b id="ro-mean">&mdash;</b></div>
       <div>Streuung<b id="ro-sd">&mdash;</b></div>
       <div>Extreme<b id="ro-extreme">0 %</b></div>
@@ -472,7 +500,7 @@
         Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 1000 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
       </p>
       <p class="blurb">
-        <b>Probiere es aus:</b> Setze zus&auml;tzliche N&auml;gel zwischen die Reihen &mdash; nur rechts, und der ganze Berg wandert nach rechts; auf beiden Au&szlig;enseiten, und er wird breiter, ohne dass sich der Mittelwert verschiebt. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie stellen nur N&auml;gel um. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um rund ein Drittel, und der Anteil der Kugeln in den &auml;u&szlig;eren R&auml;ndern steigt auf etwa das Siebenfache. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
+        <b>Probiere es aus:</b> Setze zus&auml;tzliche N&auml;gel zwischen die Reihen &mdash; nur rechts, und der ganze Berg wandert nach rechts; auf beiden Au&szlig;enseiten, und er wird breiter, ohne dass sich der Mittelwert verschiebt. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie stellen nur N&auml;gel um. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; der Berg wird flacher und breiter: die Streuung w&auml;chst um rund die H&auml;lfte, die Spitze in der Mitte sinkt, und der Anteil der Kugeln in den &auml;u&szlig;eren R&auml;ndern steigt auf ein Vielfaches. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
       </p>
     </div>
     <div class="build-tag">build v1</div>
@@ -614,14 +642,16 @@
     // Only the lower part of the board, so the funnel still spreads balls
     // normally before the scenario starts acting on them.
     var from = (name === 'warm') ? 9 : 11;
-    gapCatch = (name === 'warm') ? 0.12 : GAP_CATCH;
+    gapCatch = (name === 'warm') ? 0.12 : 0.16;
 
     for (q = from; q < LEVELS; q += 2) {
       r = levelReach(q);
       for (h = -r; h <= r; h += 2) {
         var put = (name === 'warm')
-          ? h > -1           // right of centre: the heap leans warm
-          : Math.abs(h) > 2; // both flanks: wider, mean unmoved
+          ? h > -1            // right of centre: the heap leans warm
+          : Math.abs(h) > 1;  // everywhere but the very middle, so the peak
+                              // itself comes down: this is a wider spread,
+                              // not a tall peak with fatter tails
         if (put) p[q][h + HOFF] = true;
       }
     }
@@ -1020,7 +1050,6 @@
   }
 
   // ============ DOM ============
-  var roStatus = document.getElementById('ro-status');
   var roFallen = document.getElementById('ro-fallen');
   var roMean = document.getElementById('ro-mean');
   var roSd = document.getElementById('ro-sd');
@@ -1034,7 +1063,6 @@
   var resetBtn = document.getElementById('sim-reset');
   var countSlider = document.getElementById('ball-count');
   var countLabel = document.getElementById('ball-count-label');
-  var countNote = document.getElementById('count-note');
   var toolAddBtn = document.getElementById('tool-add');
   var toolRemoveBtn = document.getElementById('tool-remove');
   var scenarioRow = document.getElementById('scenario-row');
@@ -1055,24 +1083,20 @@
       primaryLabel.textContent = 'Pause';
       primarySub.textContent = 'Kugelregen anhalten';
       primaryIcon.innerHTML = ICON_PAUSE;
-      roStatus.textContent = 'Läuft';
     } else if (m === PAUSED) {
       primaryLabel.textContent = 'Weiter';
       primarySub.textContent = 'Kugelregen fortsetzen';
       primaryIcon.innerHTML = ICON_PLAY;
-      roStatus.textContent = 'Pausiert';
     } else if (m === DONE) {
       // Nothing is finished here -- the board simply ran out of queued
       // balls. The button invites topping the same distribution up again.
       primaryLabel.textContent = 'Mehr';
       primarySub.textContent = 'Weitere Kugeln zugeben';
       primaryIcon.innerHTML = ICON_PLAY;
-      roStatus.textContent = binSamples.length > 0 ? 'Bereit für mehr' : 'Bereit';
     } else {
       primaryLabel.textContent = 'Start';
       primarySub.textContent = 'Kugeln fallen lassen';
       primaryIcon.innerHTML = ICON_PLAY;
-      roStatus.textContent = 'Bereit';
     }
   }
 
@@ -1149,6 +1173,14 @@
     toolAddBtn.classList.toggle('active', t === 'add');
     toolRemoveBtn.classList.toggle('active', t === 'remove');
   }
+  var nailHelpBtn = document.getElementById('nail-help');
+  var nailHelpText = document.getElementById('nail-help-text');
+  nailHelpBtn.addEventListener('click', function () {
+    var open = nailHelpText.hidden;
+    nailHelpText.hidden = !open;
+    nailHelpBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+
   toolAddBtn.addEventListener('click', function () { setTool('add'); });
   toolRemoveBtn.addEventListener('click', function () { setTool('remove'); });
 
@@ -1181,18 +1213,9 @@
     });
   });
 
-  function describeCount(n) {
-    // 365 is the anchor: one ball per day of a year. Nearby values are
-    // described in the same currency so the slider stays meaningful.
-    if (n === 365) return '365 Kugeln — ein volles Jahr aus lauter einzelnen Wettertagen.';
-    if (n < 40) return n + ' Kugeln — viel zu wenige, um eine Form zu erkennen.';
-    return n + ' Kugeln — ' + Math.round(n / 365 * 12) + ' Monate Wetter.';
-  }
-
   function updateCountLabel() {
     var n = parseInt(countSlider.value, 10);
     countLabel.textContent = n;
-    countNote.textContent = describeCount(n);
   }
 
   countSlider.addEventListener('input', updateCountLabel);
