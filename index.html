@@ -348,6 +348,7 @@
     </div>
 
     <div class="section-label">N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</div>
+    <p class="blurb" style="font-size:12.5px; margin:-4px 0 10px; opacity:.75;">Du kannst vorhandene N&auml;gel entfernen &mdash; und zwischen je zwei davon einen <b>zus&auml;tzlichen</b> setzen. Diese Zwischenpl&auml;tze sind nicht eingezeichnet: tippe einfach mittig zwischen zwei N&auml;gel.</p>
     <div class="seg-row" id="tool-row">
       <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
       <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
@@ -497,91 +498,119 @@
   var BIN_TOP = 0.80;       // where the bin walls begin
   var PIN_R = 0.009;        // pin radius
   var BALL_R = 0.011;       // ball radius
-  var GRAVITY = 9.0;        // unit-space gravity
-  var BOUNCE = 0.10;        // upward kick off a pin, so the hop is a real arc
-  var DRIFT_KEEP = 0.6;     // chance a ball keeps its sideways momentum in a gap
+  // Fall time scales as 1/sqrt(g), so a quarter of the speed needs a
+  // sixteenth of the gravity. The bounce is scaled with it so the arc keeps
+  // the same shape rather than turning into a flat skim.
+  var GRAVITY = 0.5625;     // unit-space gravity -- a full board takes ~6s
+  var BOUNCE = 0.025;       // upward kick off a pin, so the hop is a real arc
+  var DRIFT_BIAS = 0.78;    // how strongly a ball keeps its sideways momentum in a gap
   var SUBSTEPS = 2;
   var DT = 1 / 60 / SUBSTEPS;
 
   // ============ PIN GRID ============
-  // Pins live on a lattice so that "add" and "remove" are a boolean toggle
-  // per slot. Row r is offset by half a spacing relative to row r-1 (that
-  // stagger is what makes a Galton board work), but every row spans the
-  // whole board, not just the classic triangle -- so a visitor can put a
-  // pin anywhere, including out on the flanks where the triangle has none.
-  var pins = [];            // array of rows, each an array of booleans
-  var pinPos = [];          // matching lattice positions {x,y}
-  var SLOT0 = [];           // old-style index of slot 0 in each row
+  // Two kinds of slot share each row.
+  //
+  //   * Default slots sit where the classic triangle has its pins. A ball
+  //     arriving at such a slot is deflected left or right by a fair coin.
+  //   * In-between slots sit half a column further along, exactly in the
+  //     gap a ball passes through on its way to the next row. A pin there
+  //     does not catch the ball head-on; it clips the shoulder and pushes
+  //     it away from that gap, which biases the choice instead of deciding
+  //     it. They start empty and are only drawn once one is placed.
+  //
+  // Both are addressed by a half-column index h: even h is a default slot,
+  // odd h an in-between one. A ball always sits on an even h.
+  var pins = [];            // pins[r][h + HOFF] -> boolean, default slots
+  var gaps = [];            // gaps[r][h + HOFF] -> boolean, in-between slots
+  var pinPos = [];          // lattice positions, indexed the same way
+  var HOFF = 0;             // shifts h into a non-negative array index
+  var HSPAN = 0;            // number of half-slots per row
 
-  var EDGE_PAD = 0.135;     // keep the outermost slots inside the frame
+  var GAP_BIAS = 0.8;       // how strongly an in-between pin pushes a ball away
 
   function slotX(row, i) { return 0.5 + (i - row / 2) * COL_DX; }
   function slotY(row) { return TOP_Y + row * ROW_DY; }
 
+  // x of half-index h: h counts half-columns out from the board's centre,
+  // so it is absolute and does not depend on the row.
+  function halfX(r, h) { return 0.5 + h * COL_DX / 2; }
+
   function buildLattice() {
+    // The widest row decides the shared indexing, so every row uses the
+    // same array layout and h can stay a plain integer offset.
+    HOFF = ROWS + 1;
+    HSPAN = 2 * (ROWS + 1) + 1;
     pinPos = [];
-    SLOT0 = [];
     for (var r = 0; r < ROWS; r++) {
-      // widest span that still fits the frame, in old-style indices
-      var iMin = Math.ceil((EDGE_PAD - 0.5) / COL_DX + r / 2);
-      var iMax = Math.floor((1 - EDGE_PAD - 0.5) / COL_DX + r / 2);
-      SLOT0.push(iMin);
       var rowPos = [];
-      for (var i = iMin; i <= iMax; i++) rowPos.push({ x: slotX(r, i), y: slotY(r) });
+      for (var j = 0; j < HSPAN; j++) rowPos.push({ x: halfX(r, j - HOFF), y: slotY(r) });
       pinPos.push(rowPos);
     }
   }
 
-  // The physics addresses pins by the ball's column k, which is an
-  // old-style index; these convert between that and the array index.
-  function slotIndex(r, k) { return k - SLOT0[r]; }
+  // The ball moves one half-step per row, so at row r its position h has
+  // the same parity as r. The classic triangle therefore sits on the h
+  // that share the row's parity -- those are the default slots, and the
+  // in-between ones are the opposite parity, exactly half a column along.
+  function sameParity(r, h) { return (((h - r) % 2) + 2) % 2 === 0; }
 
-  // A ball enters at the top and moves at most one column per row, so at
-  // row r it can only be in column 0..r. Slots outside that wedge exist on
-  // the lattice but no ball can ever reach them -- they are drawn faintly
-  // and refuse a pin, so a visitor never places one that does nothing.
-  function slotReachable(r, j) {
-    var k = j + SLOT0[r];
-    return k >= 0 && k <= r;
+  function isDefaultSlot(r, h) {
+    return sameParity(r, h) && Math.abs(h) <= r;
+  }
+  function isGapSlot(r, h) {
+    return !sameParity(r, h) && Math.abs(h) <= r + 1;
+  }
+  function slotUsable(r, j) {
+    var h = j - HOFF;
+    return isDefaultSlot(r, h) || isGapSlot(r, h);
   }
 
-  function pinAt(r, k) {
-    var j = slotIndex(r, k);
-    if (j < 0 || j >= pins[r].length) return false;
+  function pinAt(r, h) {
+    var j = h + HOFF;
+    if (j < 0 || j >= HSPAN) return false;
     return pins[r][j];
+  }
+  function gapAt(r, h) {
+    var j = h + HOFF;
+    if (j < 0 || j >= HSPAN) return false;
+    return gaps[r][j];
   }
 
   function defaultPins() {
-    // The classic triangle: row r carries pins at old-style indices 0..r.
     var p = [];
     for (var r = 0; r < ROWS; r++) {
       var row = [];
-      for (var j = 0; j < pinPos[r].length; j++) {
-        var k = j + SLOT0[r];
-        row.push(k >= 0 && k <= r);
-      }
+      for (var j = 0; j < HSPAN; j++) row.push(isDefaultSlot(r, j - HOFF));
       p.push(row);
     }
     return p;
   }
 
-  // Scenario presets. They do not fake the statistics: they only change
-  // which pins exist. The resulting distribution then emerges from the
-  // simulation itself, exactly as it does when a visitor edits by hand.
+  function emptyGaps() {
+    var g = [];
+    for (var r = 0; r < ROWS; r++) {
+      var row = [];
+      for (var j = 0; j < HSPAN; j++) row.push(false);
+      g.push(row);
+    }
+    return g;
+  }
+
   function scenarioPins(name) {
     var p = defaultPins();
-    var r, k, j, rel;
-    function clear(r, k) {
-      var j = slotIndex(r, k);
-      if (j >= 0 && j < p[r].length) p[r][j] = false;
+    var r, h, rel;
+    function clear(r, h) {
+      var j = h + HOFF;
+      if (j >= 0 && j < HSPAN) p[r][j] = false;
     }
     if (name === 'warm') {
-      // Thin out the right flank of the triangle. A ball drifting right
-      // there meets no pin to send it back, so the whole heap slides
-      // towards the warm end -- a shift of the mean, shape largely intact.
+      // Thin out the right flank. A ball drifting right there meets no pin
+      // to send it back, so the whole heap slides towards the warm end --
+      // a shift of the mean with the shape largely intact.
       for (r = 2; r < ROWS; r++) {
-        for (k = 0; k <= r; k++) {
-          if (r > 0 && k / r > 0.66) clear(r, k);
+        for (h = -r; h <= r; h += 2) {
+          rel = (h + r) / (2 * r);
+          if (rel > 0.66) clear(r, h);
         }
       }
     } else if (name === 'extreme') {
@@ -589,9 +618,9 @@
       // instead of being nudged back, so the mean stays put while the
       // distribution grows wider and the tails get heavier.
       for (r = 3; r < ROWS; r++) {
-        for (k = 0; k <= r; k++) {
-          rel = k / r;
-          if (rel < 0.22 || rel > 0.78) clear(r, k);
+        for (h = -r; h <= r; h += 2) {
+          rel = (h + r) / (2 * r);
+          if (rel < 0.22 || rel > 0.78) clear(r, h);
         }
       }
     }
@@ -600,19 +629,23 @@
 
   function countPins() {
     var n = 0;
-    for (var r = 0; r < pins.length; r++) {
-      for (var i = 0; i < pins[r].length; i++) if (pins[r][i]) n++;
+    for (var r = 0; r < ROWS; r++) {
+      for (var j = 0; j < HSPAN; j++) {
+        if (pins[r][j]) n++;
+        if (gaps[r][j]) n++;
+      }
     }
     return n;
   }
 
   // ============ BINS ============
-  // One bin per landing column, each centred exactly on its lattice
-  // position, so a ball that commits to column k always lands in bin k.
+  // One bin per landing column, each centred exactly on the half-lattice
+  // position a ball can finish on, so a ball always lands in its own bin.
   var BIN_W = COL_DX;
   var EDGES = (function () {
+    var left = 0.5 - ROWS * COL_DX / 2;   // x of the leftmost landing column
     var e = [];
-    for (var i = 0; i <= BINS; i++) e.push(slotX(ROWS, 0) - COL_DX / 2 + i * COL_DX);
+    for (var i = 0; i <= BINS; i++) e.push(left - COL_DX / 2 + i * COL_DX);
     return e;
   })();
 
@@ -633,15 +666,15 @@
   var MAX_LIVE = 120;        // cap on balls in flight at once
 
   function spawnBall() {
-    // k = how many times this ball has gone right so far. After row r the
-    // ball sits in the gap at lattice position slotX(r+1, k) -- tracking k
-    // directly is what makes the board exactly binomial.
+    // h = the ball's position in half-columns. It moves one half-step per
+    // row, so after r rows it sits on an even h with |h| <= r -- tracking
+    // that directly is what makes the board exactly binomial.
     balls.push({
       x: 0.5,
       y: 0.045,
       vx: 0,
       vy: 0.12,
-      k: 0,
+      h: 0,
       drift: 0,
       nextRow: 0,
       lastTarget: 0.5,
@@ -677,30 +710,43 @@
     b.x += b.vx * DT;
     b.y += b.vy * DT;
 
-    // --- reaching pin k of the next row ---
-    // After r rows with k rights the ball sits exactly on pin k of row r,
-    // so the pin it meets is known and needs no searching.
+    // --- reaching the next row ---
+    // After r rows the ball sits on half-column h, which is exactly where
+    // that row's default slot is, so the pin it meets needs no searching.
     if (b.nextRow < ROWS && b.y >= slotY(b.nextRow) - PIN_R - BALL_R) {
       var r = b.nextRow;
-      b.x = slotX(r, b.k);
+      b.x = halfX(r, b.h);
       b.y = slotY(r) - PIN_R - BALL_R * 0.5;
 
-      if (pinAt(r, b.k)) {
-        // A pin is here: a fair coin decides which way it bounces.
-        if (Math.random() < 0.5) { b.k++; b.drift = 1; }
-        else { b.drift = -1; }
+      // Chance of going right, before the in-between pins have their say.
+      var pRight;
+      if (pinAt(r, b.h)) {
+        // A pin square in the ball's path: a fair coin decides.
+        pRight = 0.5;
       } else {
-        // No pin: nothing deflects the ball, so it carries on the way it
-        // was already going. This is why removing pins is not neutral --
-        // it lets a sideways run continue instead of being re-randomised.
-        if (b.drift > 0) b.k++;
-        else if (b.drift === 0 && Math.random() < 0.5) b.k++;
-        if (Math.random() > DRIFT_KEEP) b.drift = 0;
+        // No pin: nothing deflects the ball, so it tends to carry on the
+        // way it was already going. A bias rather than a certainty -- an
+        // unopposed ball would otherwise run dead straight to the wall.
+        // This is why removing pins is not neutral: it lets a sideways run
+        // continue instead of being re-randomised by a bounce.
+        pRight = b.drift === 0 ? 0.5 : (b.drift > 0 ? DRIFT_BIAS : 1 - DRIFT_BIAS);
       }
 
+      // An in-between pin sits in one of the two gaps the ball is about to
+      // pass through. It clips the ball's shoulder rather than catching it
+      // head-on, so it pushes the ball away from that side instead of
+      // deciding the outcome outright.
+      var blockRight = gapAt(r, b.h + 1);
+      var blockLeft = gapAt(r, b.h - 1);
+      if (blockRight && !blockLeft) pRight *= (1 - GAP_BIAS);
+      else if (blockLeft && !blockRight) pRight = 1 - (1 - pRight) * (1 - GAP_BIAS);
+
+      if (Math.random() < pRight) { b.h++; b.drift = 1; }
+      else { b.h--; b.drift = -1; }
+
       // Launch the next hop: an upward kick plus exactly the sideways
-      // speed needed to arrive on the following pin.
-      var nxt = slotX(r + 1, b.k);
+      // speed needed to arrive on the following slot.
+      var nxt = halfX(r + 1, b.h);
       b.vy = -BOUNCE;
       b.vx = (nxt - b.x) / hopTime(b.vy);
       b.nextRow++;
@@ -796,21 +842,40 @@
     boardCtx.lineTo((0.5 + lastHalf) * W, lastY * H);
     boardCtx.stroke();
 
-    // --- pins, and the empty slots that can still take one ---
-    // Only slots a ball can actually reach are offered as targets; the rest
-    // of the lattice is left blank so nobody places a pin that does nothing.
+    // --- pins, and the slots that can still take one ---
+    // Default slots always show: filled when they carry a pin, as a faint
+    // ring when empty, so removing and restoring one is discoverable.
+    // In-between slots stay invisible until a visitor puts a pin there --
+    // showing every one of them would double the visual clutter and bury
+    // the triangle the whole exhibit is about.
     var pr = radiusPx(PIN_R);
     for (var r = 0; r < ROWS; r++) {
-      for (var i = 0; i < pins[r].length; i++) {
-        if (!slotReachable(r, i)) continue;
-        var p = pinPos[r][i];
+      for (var j = 0; j < HSPAN; j++) {
+        var h = j - HOFF;
+        var isDef = isDefaultSlot(r, h);
+        var isGap = isGapSlot(r, h);
+        if (!isDef && !isGap) continue;
+
+        var p = pinPos[r][j];
         var px = p.x * W, py = p.y * H;
-        if (pins[r][i]) {
+
+        if (isDef && pins[r][j]) {
           boardCtx.fillStyle = INK;
           boardCtx.beginPath();
           boardCtx.arc(px, py, pr, 0, Math.PI * 2);
           boardCtx.fill();
-        } else {
+        } else if (isGap && gaps[r][j]) {
+          // Drawn slightly smaller and hollow-centred, so an added pin is
+          // recognisably a different beast from the board's own ones.
+          boardCtx.fillStyle = INK;
+          boardCtx.beginPath();
+          boardCtx.arc(px, py, pr * 0.92, 0, Math.PI * 2);
+          boardCtx.fill();
+          boardCtx.fillStyle = 'rgba(255,255,255,.85)';
+          boardCtx.beginPath();
+          boardCtx.arc(px, py, pr * 0.34, 0, Math.PI * 2);
+          boardCtx.fill();
+        } else if (isDef) {
           boardCtx.strokeStyle = 'rgba(17,17,17,.28)';
           boardCtx.lineWidth = 1.5;
           boardCtx.beginPath();
@@ -1032,17 +1097,20 @@
   // Nearest lattice slot within a generous touch radius — fingers are
   // blunt, so the hit area is much larger than the pin itself.
   function hitSlot(pt) {
+    // Considers default and in-between slots alike, so a tap lands on
+    // whichever is nearest -- that is what makes the in-between spots feel
+    // like part of the same board rather than a separate mode.
     var best = null, bestD = Infinity;
     for (var r = 0; r < ROWS; r++) {
-      for (var i = 0; i < pinPos[r].length; i++) {
-        if (!slotReachable(r, i)) continue;
-        var p = pinPos[r][i];
+      for (var j = 0; j < HSPAN; j++) {
+        if (!slotUsable(r, j)) continue;
+        var p = pinPos[r][j];
         var dx = (p.x - pt.x) * W, dy = (p.y - pt.y) * H;
         var d = Math.hypot(dx, dy);
-        if (d < bestD) { bestD = d; best = { r: r, i: i }; }
+        if (d < bestD) { bestD = d; best = { r: r, j: j, h: j - HOFF }; }
       }
     }
-    var touchR = Math.max(22, radiusPx(COL_DX) * 0.62);
+    var touchR = Math.max(20, radiusPx(COL_DX) * 0.5);
     return bestD <= touchR ? best : null;
   }
 
@@ -1052,10 +1120,12 @@
     if (!slot) return;
     ev.preventDefault();
 
-    var has = pins[slot.r][slot.i];
+    var isDef = isDefaultSlot(slot.r, slot.h);
+    var store = isDef ? pins : gaps;
+    var has = store[slot.r][slot.j];
     if (tool === 'add' && has) return;
     if (tool === 'remove' && !has) return;
-    pins[slot.r][slot.i] = (tool === 'add');
+    store[slot.r][slot.j] = (tool === 'add');
 
     // The heap is deliberately kept: editing the board while balls keep
     // arriving is how a visitor sees the distribution bend towards the new
@@ -1067,10 +1137,6 @@
     updateHint();
   }
 
-  // Handle the tap on touchstart for responsiveness, and swallow the
-  // synthetic click that follows it, which would otherwise toggle the
-  // same pin a second time and undo the edit.
-  var lastTouchTap = 0;
   stage.addEventListener('touchstart', function (ev) {
     lastTouchTap = Date.now();
     onStageTap(ev);
@@ -1101,6 +1167,7 @@
     // the presets is to compare one finished distribution with another.
     // Hand-editing single pins deliberately keeps the heap instead.
     pins = scenarioPins(name);
+    gaps = emptyGaps();
     scenarioBtns.forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-scenario') === name);
     });
@@ -1174,6 +1241,7 @@
 
   resetBtn.addEventListener('click', function () {
     pins = defaultPins();
+    gaps = emptyGaps();
     scenarioBtns.forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-scenario') === 'normal');
     });
@@ -1265,6 +1333,7 @@
   function init() {
     buildLattice();
     pins = defaultPins();
+    gaps = emptyGaps();
     setupViewToggle();
     layout();
     setTool('add');

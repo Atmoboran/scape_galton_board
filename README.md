@@ -27,10 +27,17 @@ cases that the accompanying text explains.
   bounces rather than gliding, and crosses the board in about 1.5 s. Balls
   may only settle once every pin row is behind them, so a growing heap can
   never intercept a ball that is still choosing its column.
+- Slots are addressed by a half-column index h whose parity follows the
+  row's, because the ball moves one half-step per row. The classic triangle
+  sits on the slots sharing that parity; the *in-between* slots are the
+  opposite parity, exactly half a column along, and start empty. A pin
+  there does not catch a ball head-on but clips its shoulder, biasing the
+  left/right choice rather than deciding it. They are not drawn until a
+  visitor places one, so the triangle stays legible.
 - A ball enters at the apex and moves at most one column per row, so it can
-  only ever occupy columns 0..r at row r. That reachable wedge is tinted on
-  the board and is the only area that accepts pins: a pin outside it is
-  provably unreachable, and offering one would be a dead control.
+  only ever reach |h| <= r at row r. That wedge is tinted on the board and
+  bounds where pins can go: a pin outside it is provably unreachable, and
+  offering one would be a dead control.
 - Design: SCAPE° corporate design (Archivo, thick ink borders, poster-hero
   layout), mobile-first and optimized for touch, with a desktop view that
   is auto-detected and can be toggled by hand.
