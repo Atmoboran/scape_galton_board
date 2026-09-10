@@ -348,7 +348,7 @@
     </div>
 
     <div class="section-label">N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</div>
-    <p class="blurb" style="font-size:12.5px; margin:-4px 0 10px; opacity:.75;">Du kannst vorhandene N&auml;gel entfernen &mdash; und zwischen je zwei davon einen <b>zus&auml;tzlichen</b> setzen. Diese Zwischenpl&auml;tze sind nicht eingezeichnet: tippe einfach mittig zwischen zwei N&auml;gel.</p>
+    <p class="blurb" style="font-size:12.5px; margin:-4px 0 10px; opacity:.75;">Du kannst vorhandene N&auml;gel entfernen &mdash; Kugeln fallen dort dann ungelenkt hindurch &mdash; und zwischen je zwei N&auml;geln einen <b>zus&auml;tzlichen</b> setzen. Diese Zwischenpl&auml;tze sind nicht eingezeichnet: tippe einfach mittig zwischen zwei N&auml;gel.</p>
     <div class="seg-row" id="tool-row">
       <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
       <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
@@ -364,9 +364,10 @@
 
     <div class="slider-row">
       <div class="slider-head">
-        <span>Kugeln pro Start</span><b id="ball-count-label">200</b>
+        <span>Kugeln pro Start</span><b id="ball-count-label">365</b>
       </div>
-      <input type="range" id="ball-count" min="10" max="1000" step="10" value="200" />
+      <input type="range" id="ball-count" min="5" max="1095" step="5" value="365" />
+      <p class="blurb" id="count-note" style="font-size:12px; margin:6px 0 0; opacity:.7;">365 Kugeln &mdash; ein Jahr aus lauter einzelnen Wettertagen.</p>
     </div>
 
     <div class="readout" id="readout">
@@ -471,7 +472,7 @@
         Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 1000 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
       </p>
       <p class="blurb">
-        <b>Probiere es aus:</b> Entferne eine ganze Nagelreihe auf einer Seite und schau, wohin die Kugeln wandern. Oder w&auml;hle oben ein Szenario und vergleiche die Kennzahlen unter dem Brett. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um rund 40 Prozent, und der Anteil der Kugeln in den &auml;u&szlig;eren R&auml;ndern steigt von etwa 1 auf gut 5 Prozent. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
+        <b>Probiere es aus:</b> Setze zus&auml;tzliche N&auml;gel nur auf einer Seite und schau, wohin die Kugeln wandern &mdash; oder entferne eine ganze Reihe und beobachte, wie die Kugeln dort einfach <em>durchfallen</em>, ohne abgelenkt zu werden. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie stellen nur N&auml;gel um. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um gut ein Drittel, und deutlich mehr Kugeln landen in den &auml;u&szlig;eren R&auml;ndern. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
       </p>
     </div>
     <div class="build-tag">build v1</div>
@@ -503,7 +504,6 @@
   // the same shape rather than turning into a flat skim.
   var GRAVITY = 0.5625;     // unit-space gravity -- a full board takes ~6s
   var BOUNCE = 0.025;       // upward kick off a pin, so the hop is a real arc
-  var DRIFT_BIAS = 0.78;    // how strongly a ball keeps its sideways momentum in a gap
   var SUBSTEPS = 2;
   var DT = 1 / 60 / SUBSTEPS;
 
@@ -526,7 +526,6 @@
   var HOFF = 0;             // shifts h into a non-negative array index
   var HSPAN = 0;            // number of half-slots per row
 
-  var GAP_BIAS = 0.8;       // how strongly an in-between pin pushes a ball away
 
   function slotX(row, i) { return 0.5 + (i - row / 2) * COL_DX; }
   function slotY(row) { return TOP_Y + row * ROW_DY; }
@@ -596,35 +595,37 @@
     return g;
   }
 
-  function scenarioPins(name) {
-    var p = defaultPins();
-    var r, h, rel;
-    function clear(r, h) {
+  // A preset is expressed the same way a visitor edits the board: by
+  // placing extra pins, never by inventing statistics. Adding in-between
+  // pins on one flank carries balls that reach it a further half column
+  // that way, which is what bends the distribution.
+  function scenarioBoard(name) {
+    var board = { pins: defaultPins(), gaps: emptyGaps() };
+    var r, h;
+    function addGap(r, h) {
       var j = h + HOFF;
-      if (j >= 0 && j < HSPAN) p[r][j] = false;
+      if (j >= 0 && j < HSPAN && isGapSlot(r, h)) board.gaps[r][j] = true;
     }
     if (name === 'warm') {
-      // Thin out the right flank. A ball drifting right there meets no pin
-      // to send it back, so the whole heap slides towards the warm end --
-      // a shift of the mean with the shape largely intact.
+      // In-between pins along the right flank: every ball that strays that
+      // way is carried further, so the whole heap slides warmwards while
+      // its shape survives.
       for (r = 2; r < ROWS; r++) {
-        for (h = -r; h <= r; h += 2) {
-          rel = (h + r) / (2 * r);
-          if (rel > 0.66) clear(r, h);
+        for (h = -r - 1; h <= r + 1; h++) {
+          if (h > 0) addGap(r, h);
         }
       }
     } else if (name === 'extreme') {
-      // Thin out both outer flanks. Balls that wander outwards keep going
-      // instead of being nudged back, so the mean stays put while the
-      // distribution grows wider and the tails get heavier.
-      for (r = 3; r < ROWS; r++) {
-        for (h = -r; h <= r; h += 2) {
-          rel = (h + r) / (2 * r);
-          if (rel < 0.22 || rel > 0.78) clear(r, h);
+      // In-between pins on both outer flanks: the middle is untouched, so
+      // the mean stays put, but anything that wanders out is carried
+      // further out -- a wider curve with heavier tails.
+      for (r = 2; r < ROWS; r++) {
+        for (h = -r - 1; h <= r + 1; h++) {
+          if (Math.abs(h) > 2) addGap(r, h);
         }
       }
     }
-    return p;
+    return board;
   }
 
   function countPins() {
@@ -675,7 +676,7 @@
       vx: 0,
       vy: 0.12,
       h: 0,
-      drift: 0,
+      hop: true,
       nextRow: 0,
       lastTarget: 0.5,
       settled: false
@@ -718,37 +719,36 @@
       b.x = halfX(r, b.h);
       b.y = slotY(r) - PIN_R - BALL_R * 0.5;
 
-      // Chance of going right, before the in-between pins have their say.
-      var pRight;
       if (pinAt(r, b.h)) {
-        // A pin square in the ball's path: a fair coin decides.
-        pRight = 0.5;
+        // A pin square in the ball's path: a fair coin sends it half a
+        // column left or right.
+        var step = Math.random() < 0.5 ? -1 : 1;
+
+        // An in-between pin sits half a column further on, exactly where
+        // the ball is heading. Clipping it carries the ball on to the next
+        // column instead of stopping it there.
+        if (gapAt(r, b.h + step)) step *= 2;
+
+        b.h += step;
+        b.hop = true;
       } else {
-        // No pin: nothing deflects the ball, so it tends to carry on the
-        // way it was already going. A bias rather than a certainty -- an
-        // unopposed ball would otherwise run dead straight to the wall.
-        // This is why removing pins is not neutral: it lets a sideways run
-        // continue instead of being re-randomised by a bounce.
-        pRight = b.drift === 0 ? 0.5 : (b.drift > 0 ? DRIFT_BIAS : 1 - DRIFT_BIAS);
+        // No pin here: nothing touches the ball, so it simply falls past
+        // this row and keeps its column. An empty slot is a hole, not an
+        // invisible obstacle.
+        b.hop = false;
       }
 
-      // An in-between pin sits in one of the two gaps the ball is about to
-      // pass through. It clips the ball's shoulder rather than catching it
-      // head-on, so it pushes the ball away from that side instead of
-      // deciding the outcome outright.
-      var blockRight = gapAt(r, b.h + 1);
-      var blockLeft = gapAt(r, b.h - 1);
-      if (blockRight && !blockLeft) pRight *= (1 - GAP_BIAS);
-      else if (blockLeft && !blockRight) pRight = 1 - (1 - pRight) * (1 - GAP_BIAS);
-
-      if (Math.random() < pRight) { b.h++; b.drift = 1; }
-      else { b.h--; b.drift = -1; }
-
-      // Launch the next hop: an upward kick plus exactly the sideways
-      // speed needed to arrive on the following slot.
       var nxt = halfX(r + 1, b.h);
-      b.vy = -BOUNCE;
-      b.vx = (nxt - b.x) / hopTime(b.vy);
+      if (b.hop) {
+        // Bounced off a pin: an upward kick plus exactly the sideways
+        // speed needed to arrive on the following slot.
+        b.vy = -BOUNCE;
+        b.vx = (nxt - b.x) / hopTime(b.vy);
+      } else {
+        // Fell through a gap: no kick and no sideways push, so the ball
+        // visibly drops past the empty spot instead of bouncing off it.
+        b.vx = 0;
+      }
       b.nextRow++;
       if (b.nextRow >= ROWS) b.lastTarget = nxt;
     }
@@ -1046,6 +1046,7 @@
   var resetBtn = document.getElementById('sim-reset');
   var countSlider = document.getElementById('ball-count');
   var countLabel = document.getElementById('ball-count-label');
+  var countNote = document.getElementById('count-note');
   var toolAddBtn = document.getElementById('tool-add');
   var toolRemoveBtn = document.getElementById('tool-remove');
   var scenarioRow = document.getElementById('scenario-row');
@@ -1137,6 +1138,11 @@
     updateHint();
   }
 
+  // Handle the tap on touchstart for responsiveness, and swallow the
+  // synthetic click that follows it, which would otherwise toggle the same
+  // slot a second time and undo the edit.
+  var lastTouchTap = 0;
+
   stage.addEventListener('touchstart', function (ev) {
     lastTouchTap = Date.now();
     onStageTap(ev);
@@ -1166,8 +1172,9 @@
     // A preset swaps the whole board, so the heap is cleared: the point of
     // the presets is to compare one finished distribution with another.
     // Hand-editing single pins deliberately keeps the heap instead.
-    pins = scenarioPins(name);
-    gaps = emptyGaps();
+    var board = scenarioBoard(name);
+    pins = board.pins;
+    gaps = board.gaps;
     scenarioBtns.forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-scenario') === name);
     });
@@ -1190,9 +1197,23 @@
     });
   });
 
-  countSlider.addEventListener('input', function () {
-    countLabel.textContent = countSlider.value;
-  });
+  function describeCount(n) {
+    // 365 is the anchor: one ball per day of a year. Nearby values are
+    // described in the same currency so the slider stays meaningful.
+    if (n === 365) return '365 Kugeln — ein Jahr aus lauter einzelnen Wettertagen.';
+    if (n % 365 === 0) return n / 365 + ' Jahre mit je 365 Wettertagen.';
+    if (n < 40) return n + ' Kugeln — viel zu wenige, um eine Form zu erkennen.';
+    if (n >= 1000) return n + ' Kugeln — rund ' + (n / 365).toFixed(1).replace('.', ',') + ' Jahre Wetter.';
+    return n + ' Kugeln — etwa ' + (n / 365).toFixed(1).replace('.', ',') + ' Jahre Wetter.';
+  }
+
+  function updateCountLabel() {
+    var n = parseInt(countSlider.value, 10);
+    countLabel.textContent = n;
+    countNote.textContent = describeCount(n);
+  }
+
+  countSlider.addEventListener('input', updateCountLabel);
 
   // ============ RUN CONTROL ============
   function clearBalls() {
@@ -1338,7 +1359,7 @@
     layout();
     setTool('add');
     setMode(IDLE);
-    countLabel.textContent = countSlider.value;
+    updateCountLabel();
     drawBoard();
     drawBalls();
     updateReadout();
