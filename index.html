@@ -348,7 +348,7 @@
     </div>
 
     <div class="section-label">N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</div>
-    <p class="blurb" style="font-size:12.5px; margin:-4px 0 10px; opacity:.75;">Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden. Gesetzte N&auml;gel sind ganz normale N&auml;gel &mdash; auch etwas au&szlig;erhalb des Dreiecks, wohin verirrte Kugeln gelangen.</p>
+    <p class="blurb" style="font-size:12.5px; margin:-4px 0 10px; opacity:.75;">Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden. Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel. So ein eingekeilter Nagel trifft die Kugel schr&auml;g und schiebt sie meist weiter nach au&szlig;en.</p>
     <div class="seg-row" id="tool-row">
       <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
       <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
@@ -472,7 +472,7 @@
         Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 1000 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
       </p>
       <p class="blurb">
-        <b>Probiere es aus:</b> Entferne N&auml;gel nur auf einer Seite und schau, wohin die Kugeln wandern &mdash; ohne N&auml;gel wird dort nichts mehr zur Mitte zur&uuml;ckgelenkt. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie nehmen nur N&auml;gel heraus. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um gut ein Drittel, und deutlich mehr Kugeln landen in den &auml;u&szlig;eren R&auml;ndern. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
+        <b>Probiere es aus:</b> Setze zus&auml;tzliche N&auml;gel zwischen die Reihen &mdash; nur rechts, und der ganze Berg wandert nach rechts; auf beiden Au&szlig;enseiten, und er wird breiter, ohne dass sich der Mittelwert verschiebt. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie stellen nur N&auml;gel um. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um gut ein Drittel, und deutlich mehr Kugeln landen in den &auml;u&szlig;eren R&auml;ndern. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
       </p>
     </div>
     <div class="build-tag">build v1</div>
@@ -503,6 +503,7 @@
   // sixteenth of the gravity. The bounce is scaled with it so the arc keeps
   // the same shape rather than turning into a flat skim.
   var GRAVITY = 0.5625;     // unit-space gravity -- a full board takes ~6s
+  var GAP_ONWARD = 0.68;    // chance a wedged nail sends the ball onward
   var BOUNCE = 0.025;       // upward kick off a pin, so the hop is a real arc
   var SUBSTEPS = 2;
   var DT = 1 / 60 / SUBSTEPS;
@@ -539,75 +540,82 @@
   // so it is absolute and does not depend on the row.
   function halfX(r, h) { return 0.5 + h * COL_DX / 2; }
 
+  var LEVELS = 2 * ROWS;    // even levels are the board's rows, odd the gaps
+
+  // y of a level: even levels sit on the row, odd ones halfway to the next.
+  function levelY(q) { return TOP_Y + (q / 2) * ROW_DY; }
+
   function buildLattice() {
-    // The widest row decides the shared indexing, so every row uses the
-    // same array layout and h can stay a plain integer offset.
-    HOFF = ROWS + 1;
-    HSPAN = 2 * (ROWS + 1) + 1;
+    HOFF = ROWS + 2;
+    HSPAN = 2 * (ROWS + 2) + 1;
     pinPos = [];
-    for (var r = 0; r < ROWS; r++) {
+    for (var q = 0; q < LEVELS; q++) {
       var rowPos = [];
-      for (var j = 0; j < HSPAN; j++) rowPos.push({ x: halfX(r, j - HOFF), y: slotY(r) });
+      for (var j = 0; j < HSPAN; j++) rowPos.push({ x: halfX(0, j - HOFF), y: levelY(q) });
       pinPos.push(rowPos);
     }
   }
 
-  // The ball moves one half-step per row, so at row r its position h has
-  // the same parity as r. Only those slots can ever be met by a ball, and
-  // they are the ones offered for editing.
-  function sameParity(r, h) { return (((h - r) % 2) + 2) % 2 === 0; }
+  // A ball moves half a column per row, so after the row at level q = 2r
+  // it sits on an h with |h| <= r and the parity of r. At the in-between
+  // level just below, q = 2r+1, it is heading for row r+1, so the slots
+  // there are the ones of row r+1. Those are the positions a nail can
+  // occupy at each level -- everything else is out of reach.
+  function levelReach(q) {
+    return (q % 2 === 0) ? (q / 2) : ((q - 1) / 2 + 1);
+  }
 
-  function slotUsable(r, j) {
+  function slotUsable(q, j) {
     var h = j - HOFF;
-    return sameParity(r, h) && Math.abs(h) <= r + 2;
+    var r = levelReach(q);
+    return (((h - r) % 2) + 2) % 2 === 0 && Math.abs(h) <= r + 1;
   }
 
-  // The board's own nails: the classic triangle.
-  function isDefaultSlot(r, h) {
-    return sameParity(r, h) && Math.abs(h) <= r;
+  // The board's own nails: the classic triangle on the even levels.
+  function isDefaultSlot(q, h) {
+    if (q % 2 !== 0) return false;
+    var r = q / 2;
+    return (((h - r) % 2) + 2) % 2 === 0 && Math.abs(h) <= r;
   }
 
-  function pinAt(r, h) {
+  function pinAt(q, h) {
     var j = h + HOFF;
     if (j < 0 || j >= HSPAN) return false;
-    return pins[r][j];
+    return pins[q][j];
   }
 
   function defaultPins() {
     var p = [];
-    for (var r = 0; r < ROWS; r++) {
+    for (var q = 0; q < LEVELS; q++) {
       var row = [];
-      for (var j = 0; j < HSPAN; j++) row.push(isDefaultSlot(r, j - HOFF));
+      for (var j = 0; j < HSPAN; j++) row.push(isDefaultSlot(q, j - HOFF));
       p.push(row);
     }
     return p;
   }
 
-  // A preset is expressed the way a visitor edits the board: by taking
-  // nails out. Thinning every second nail on one flank lets balls that
-  // stray there keep flying instead of being pulled back, which is what
-  // bends the distribution. No statistics are invented anywhere.
+  // A preset is expressed the way a visitor edits the board: by putting
+  // extra nails in. A nail wedged into a gap is met off-centre, so it does
+  // not split the flow evenly -- it tends to send the ball onward in the
+  // direction it was already travelling. Placing such nails on one flank
+  // therefore leans the whole distribution that way, and placing them on
+  // both flanks widens it without moving the mean.
   function scenarioPins(name) {
     var p = defaultPins();
-    var r, h, rel, i = 0;
+    var q, h, r;
     if (name === 'normal') return p;
 
-    for (r = 2; r < ROWS; r++) {
+    // Only the lower half of the board, so the funnel still spreads balls
+    // normally before the scenario starts acting on them.
+    var from = (name === 'warm') ? 13 : 11;
+
+    for (q = from; q < LEVELS; q += 2) {
+      r = levelReach(q);
       for (h = -r; h <= r; h += 2) {
-        // The outermost nails of each row stay put: they are the backstop
-        // that turns an escaping ball around, and without them balls pile
-        // up against the wall instead of forming a curve.
-        if (Math.abs(h) > r - 4) continue;
-        rel = (h + r) / (2 * r);
-
-        var thin = (name === 'warm')
-          ? rel > 0.55                 // right flank only: the heap leans warm
-          : (rel > 0.30 && rel < 0.70); // centre: balls stop being re-centred
-
-        if (thin) {
-          i++;
-          if (i % 2 === 0) p[r][h + HOFF] = false;
-        }
+        var put = (name === 'warm')
+          ? h > 1            // right flank only: the heap leans warm
+          : Math.abs(h) > 3; // both flanks: wider, mean unmoved
+        if (put) p[q][h + HOFF] = true;
       }
     }
     return p;
@@ -615,9 +623,9 @@
 
   function countPins() {
     var n = 0;
-    for (var r = 0; r < ROWS; r++) {
+    for (var q = 0; q < LEVELS; q++) {
       for (var j = 0; j < HSPAN; j++) {
-        if (pins[r][j]) n++;
+        if (pins[q][j]) n++;
       }
     }
     return n;
@@ -653,9 +661,8 @@
   // waves of 120.
 
   function spawnBall() {
-    // h = the ball's position in half-columns. It moves one half-step per
-    // row, so after r rows it sits on an even h with |h| <= r -- tracking
-    // that directly is what makes the board exactly binomial.
+    // h = the ball's position in half-columns, advanced level by level.
+    // Tracking it directly is what makes the board exactly binomial.
     balls.push({
       x: 0.5,
       y: 0.045,
@@ -688,9 +695,12 @@
 
   // Time for one hop: solve ROW_DY = vy0*t + g*t^2/2 for t, so the ball
   // leaves a pin on a parabola that lands exactly on the next pin down.
+  // Levels are half a row apart, so a hop covers half the vertical drop
+  // a full row used to.
   function hopTime(vy0) {
     var a = GRAVITY / 2;
-    return (-vy0 + Math.sqrt(vy0 * vy0 + 4 * a * ROW_DY)) / (2 * a);
+    var dy = ROW_DY / 2;
+    return (-vy0 + Math.sqrt(vy0 * vy0 + 4 * a * dy)) / (2 * a);
   }
 
   function stepBall(b) {
@@ -698,48 +708,61 @@
     b.x += b.vx * DT;
     b.y += b.vy * DT;
 
-    // --- reaching the next row ---
-    // After r rows the ball sits on half-column h, which is exactly where
-    // that row's default slot is, so the pin it meets needs no searching.
-    if (b.nextRow < ROWS && b.y >= slotY(b.nextRow) - PIN_R - BALL_R) {
-      var r = b.nextRow;
-      b.x = halfX(r, b.h);
-      b.y = slotY(r) - PIN_R - BALL_R * 0.5;
+    // --- reaching the next level ---
+    // Even levels are the board's own rows; odd ones are the gaps between
+    // them, where a visitor can wedge an extra nail.
+    if (b.nextRow < LEVELS && b.y >= levelY(b.nextRow) - PIN_R - BALL_R) {
+      var q = b.nextRow;
+      b.x = halfX(0, b.h);
+      b.y = levelY(q) - PIN_R - BALL_R * 0.5;
 
-      if (pinAt(r, b.h)) {
-        // A nail in the ball's path: a fair coin sets the direction it
-        // leaves in, and it moves half a column that way.
-        b.dir = Math.random() < 0.5 ? -1 : 1;
+      if (pinAt(q, b.h)) {
+        if (q % 2 === 0) {
+          // A nail on the row itself: met head-on, so a fair coin sends
+          // the ball half a column left or right.
+          b.dir = Math.random() < 0.5 ? -1 : 1;
+          b.h += b.dir;
+        } else {
+          // A nail wedged into a gap: the ball meets it off-centre and has
+          // to clear the neighbouring nails to get past, so it is carried a
+          // full column -- usually onward, the way it was already going.
+          var out = b.h > 0 ? 1 : (b.h < 0 ? -1 : (Math.random() < 0.5 ? 1 : -1));
+          var side = Math.random() < GAP_ONWARD ? out : -out;
+          b.dir = side;
+          b.h += 2 * side;
+        }
         b.hop = true;
+      } else if (q % 2 === 0) {
+        // A hole where one of the board's own nails should be: nothing
+        // touches the ball, so it keeps flying the way it already was
+        // instead of being pulled back towards the middle.
+        b.h += b.dir;
+        b.hop = false;
       } else {
-        // A hole: nothing touches the ball, so it simply keeps flying the
-        // way it already was. A ball dropping straight in stays straight;
-        // one that had just been deflected carries on out. That is what
-        // makes a missing nail matter -- it stops pulling balls back.
+        // Empty air between two rows: nothing happens at all.
         b.hop = false;
       }
-      b.h += b.dir;
 
-      var nxt = halfX(r + 1, b.h);
+      var nxt = halfX(0, b.h);
       if (b.hop) {
-        // Struck a nail: an upward kick plus exactly the sideways speed
-        // needed to arrive on the following slot -- a visible bounce.
         b.vy = -BOUNCE;
         b.vx = (nxt - b.x) / hopTime(b.vy);
       } else {
-        // Flew through a hole: no kick, but it keeps its sideways travel,
-        // so it glides on past the empty spot instead of bouncing off it.
         b.vx = (nxt - b.x) / hopTime(0);
       }
       b.nextRow++;
-      if (b.nextRow >= ROWS) b.lastTarget = nxt;
+      if (b.nextRow >= LEVELS) {
+        // A ball that ends between two columns settles into one of them.
+        if (((b.h % 2) + 2) % 2 !== 0) b.h += Math.random() < 0.5 ? 1 : -1;
+        b.lastTarget = halfX(0, b.h);
+      }
     }
 
     // --- landing ---
     // Past the last pin row the ball drops straight down the column it
     // committed to; letting it keep drifting sideways here would smear the
     // result across neighbouring bins and flatten the curve.
-    if (b.nextRow < ROWS) return;
+    if (b.nextRow < LEVELS) return;
     if (b.vx !== 0 && Math.abs(b.x - b.lastTarget) < 0.004) {
       b.x = b.lastTarget;
       b.vx = 0;
@@ -831,10 +854,10 @@
     // as nothing, because that is exactly what the ball meets there.
     var pr = radiusPx(PIN_R);
     boardCtx.fillStyle = INK;
-    for (var r = 0; r < ROWS; r++) {
+    for (var q = 0; q < LEVELS; q++) {
       for (var j = 0; j < HSPAN; j++) {
-        if (!pins[r][j]) continue;
-        var p = pinPos[r][j];
+        if (!pins[q][j]) continue;
+        var p = pinPos[q][j];
         boardCtx.beginPath();
         boardCtx.arc(p.x * W, p.y * H, pr, 0, Math.PI * 2);
         boardCtx.fill();
@@ -1058,13 +1081,13 @@
     // whichever is nearest -- that is what makes the in-between spots feel
     // like part of the same board rather than a separate mode.
     var best = null, bestD = Infinity;
-    for (var r = 0; r < ROWS; r++) {
+    for (var q = 0; q < LEVELS; q++) {
       for (var j = 0; j < HSPAN; j++) {
-        if (!slotUsable(r, j)) continue;
-        var p = pinPos[r][j];
+        if (!slotUsable(q, j)) continue;
+        var p = pinPos[q][j];
         var dx = (p.x - pt.x) * W, dy = (p.y - pt.y) * H;
         var d = Math.hypot(dx, dy);
-        if (d < bestD) { bestD = d; best = { r: r, j: j, h: j - HOFF }; }
+        if (d < bestD) { bestD = d; best = { r: q, j: j, h: j - HOFF }; }
       }
     }
     var touchR = Math.max(20, radiusPx(COL_DX) * 0.5);
@@ -1186,9 +1209,9 @@
     // visitor can keep topping up the same distribution -- and can edit
     // the pins in between, which is the whole point of the exhibit.
     toRelease += n;
-    // The whole batch leaves the funnel within roughly a second, so it
-    // falls as a single shower rather than a slow trickle.
-    releaseEvery = Math.max(0.002, Math.min(0.05, 1.2 / Math.max(1, n)));
+    // A batch falls as one shower, but with enough air between balls that
+    // they read as separate events rather than a solid stream.
+    releaseEvery = Math.max(0.022, Math.min(0.09, 9 / Math.max(1, n)));
   }
 
   function startRun() {
