@@ -472,7 +472,7 @@
         Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 1000 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
       </p>
       <p class="blurb">
-        <b>Probiere es aus:</b> Setze zus&auml;tzliche N&auml;gel zwischen die Reihen &mdash; nur rechts, und der ganze Berg wandert nach rechts; auf beiden Au&szlig;enseiten, und er wird breiter, ohne dass sich der Mittelwert verschiebt. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie stellen nur N&auml;gel um. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um gut ein Drittel, und deutlich mehr Kugeln landen in den &auml;u&szlig;eren R&auml;ndern. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
+        <b>Probiere es aus:</b> Setze zus&auml;tzliche N&auml;gel zwischen die Reihen &mdash; nur rechts, und der ganze Berg wandert nach rechts; auf beiden Au&szlig;enseiten, und er wird breiter, ohne dass sich der Mittelwert verschiebt. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie stellen nur N&auml;gel um. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um rund ein Drittel, und der Anteil der Kugeln in den &auml;u&szlig;eren R&auml;ndern steigt auf etwa das Siebenfache. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
       </p>
     </div>
     <div class="build-tag">build v1</div>
@@ -502,9 +502,14 @@
   // Fall time scales as 1/sqrt(g), so a quarter of the speed needs a
   // sixteenth of the gravity. The bounce is scaled with it so the arc keeps
   // the same shape rather than turning into a flat skim.
-  var GRAVITY = 0.5625;     // unit-space gravity -- a full board takes ~6s
-  var GAP_ONWARD = 0.68;    // chance a wedged nail sends the ball onward
-  var BOUNCE = 0.025;       // upward kick off a pin, so the hop is a real arc
+  var GRAVITY = 0.1406;     // unit-space gravity -- a full drop takes ~12s
+  // A wedged nail is small and sits off to one side, so most balls slip
+  // past it untouched. When it does catch one it nudges it half a column
+  // onward -- gentle enough that every bin stays populated and the curve
+  // keeps its shape instead of breaking into spikes.
+  var GAP_CATCH = 0.14;     // chance a wedged nail actually touches a ball
+  var gapCatch = GAP_CATCH; // the value in force, set per scenario
+  var BOUNCE = 0.0125;      // upward kick off a pin, so the hop is a real arc
   var SUBSTEPS = 2;
   var DT = 1 / 60 / SUBSTEPS;
 
@@ -603,18 +608,20 @@
   function scenarioPins(name) {
     var p = defaultPins();
     var q, h, r;
+    gapCatch = GAP_CATCH;
     if (name === 'normal') return p;
 
-    // Only the lower half of the board, so the funnel still spreads balls
+    // Only the lower part of the board, so the funnel still spreads balls
     // normally before the scenario starts acting on them.
-    var from = (name === 'warm') ? 13 : 11;
+    var from = (name === 'warm') ? 9 : 11;
+    gapCatch = (name === 'warm') ? 0.12 : GAP_CATCH;
 
     for (q = from; q < LEVELS; q += 2) {
       r = levelReach(q);
       for (h = -r; h <= r; h += 2) {
         var put = (name === 'warm')
-          ? h > 1            // right flank only: the heap leans warm
-          : Math.abs(h) > 3; // both flanks: wider, mean unmoved
+          ? h > -1           // right of centre: the heap leans warm
+          : Math.abs(h) > 2; // both flanks: wider, mean unmoved
         if (put) p[q][h + HOFF] = true;
       }
     }
@@ -716,21 +723,23 @@
       b.x = halfX(0, b.h);
       b.y = levelY(q) - PIN_R - BALL_R * 0.5;
 
-      if (pinAt(q, b.h)) {
-        if (q % 2 === 0) {
-          // A nail on the row itself: met head-on, so a fair coin sends
-          // the ball half a column left or right.
-          b.dir = Math.random() < 0.5 ? -1 : 1;
-          b.h += b.dir;
-        } else {
-          // A nail wedged into a gap: the ball meets it off-centre and has
-          // to clear the neighbouring nails to get past, so it is carried a
-          // full column -- usually onward, the way it was already going.
-          var out = b.h > 0 ? 1 : (b.h < 0 ? -1 : (Math.random() < 0.5 ? 1 : -1));
-          var side = Math.random() < GAP_ONWARD ? out : -out;
-          b.dir = side;
-          b.h += 2 * side;
-        }
+      var hitRow = (q % 2 === 0) && pinAt(q, b.h);
+      var hitGap = (q % 2 === 1) && pinAt(q, b.h) && Math.random() < gapCatch;
+
+      if (hitRow) {
+        // A nail on the row itself: met head-on, so a fair coin sends the
+        // ball half a column left or right.
+        b.dir = Math.random() < 0.5 ? -1 : 1;
+        b.h += b.dir;
+        b.hop = true;
+      } else if (hitGap) {
+        // A nail wedged into a gap, clipped off-centre: the ball has to
+        // clear the neighbouring nails to get past, so it is carried a
+        // whole column onward -- the way it was already travelling. A
+        // whole column, not half, because a half step would leave the ball
+        // between two bins and the curve would break into spikes.
+        b.dir = b.h > 0 ? 1 : (b.h < 0 ? -1 : (Math.random() < 0.5 ? 1 : -1));
+        b.h += 2 * b.dir;
         b.hop = true;
       } else if (q % 2 === 0) {
         // A hole where one of the board's own nails should be: nothing
@@ -739,7 +748,7 @@
         b.h += b.dir;
         b.hop = false;
       } else {
-        // Empty air between two rows: nothing happens at all.
+        // Empty air between two rows, or a wedged nail the ball missed.
         b.hop = false;
       }
 
@@ -1211,7 +1220,7 @@
     toRelease += n;
     // A batch falls as one shower, but with enough air between balls that
     // they read as separate events rather than a solid stream.
-    releaseEvery = Math.max(0.022, Math.min(0.09, 9 / Math.max(1, n)));
+    releaseEvery = Math.max(0.030, Math.min(0.12, 12 / Math.max(1, n)));
   }
 
   function startRun() {
