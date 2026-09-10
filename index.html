@@ -348,7 +348,7 @@
     </div>
 
     <div class="section-label">N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</div>
-    <p class="blurb" style="font-size:12.5px; margin:-4px 0 10px; opacity:.75;">Du kannst vorhandene N&auml;gel entfernen &mdash; Kugeln fallen dort dann ungelenkt hindurch &mdash; und zwischen je zwei N&auml;geln einen <b>zus&auml;tzlichen</b> setzen. Diese Zwischenpl&auml;tze sind nicht eingezeichnet: tippe einfach mittig zwischen zwei N&auml;gel.</p>
+    <p class="blurb" style="font-size:12.5px; margin:-4px 0 10px; opacity:.75;">Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden. Gesetzte N&auml;gel sind ganz normale N&auml;gel &mdash; auch etwas au&szlig;erhalb des Dreiecks, wohin verirrte Kugeln gelangen.</p>
     <div class="seg-row" id="tool-row">
       <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
       <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
@@ -366,7 +366,7 @@
       <div class="slider-head">
         <span>Kugeln pro Start</span><b id="ball-count-label">365</b>
       </div>
-      <input type="range" id="ball-count" min="5" max="1095" step="5" value="365" />
+      <input type="range" id="ball-count" min="5" max="365" step="5" value="365" />
       <p class="blurb" id="count-note" style="font-size:12px; margin:6px 0 0; opacity:.7;">365 Kugeln &mdash; ein Jahr aus lauter einzelnen Wettertagen.</p>
     </div>
 
@@ -472,7 +472,7 @@
         Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 1000 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
       </p>
       <p class="blurb">
-        <b>Probiere es aus:</b> Setze zus&auml;tzliche N&auml;gel nur auf einer Seite und schau, wohin die Kugeln wandern &mdash; oder entferne eine ganze Reihe und beobachte, wie die Kugeln dort einfach <em>durchfallen</em>, ohne abgelenkt zu werden. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie stellen nur N&auml;gel um. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um gut ein Drittel, und deutlich mehr Kugeln landen in den &auml;u&szlig;eren R&auml;ndern. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
+        <b>Probiere es aus:</b> Entferne N&auml;gel nur auf einer Seite und schau, wohin die Kugeln wandern &mdash; ohne N&auml;gel wird dort nichts mehr zur Mitte zur&uuml;ckgelenkt. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie nehmen nur N&auml;gel heraus. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; die Streuung w&auml;chst aber um gut ein Drittel, und deutlich mehr Kugeln landen in den &auml;u&szlig;eren R&auml;ndern. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
       </p>
     </div>
     <div class="build-tag">build v1</div>
@@ -520,12 +520,17 @@
   //
   // Both are addressed by a half-column index h: even h is a default slot,
   // odd h an in-between one. A ball always sits on an even h.
-  var pins = [];            // pins[r][h + HOFF] -> boolean, default slots
-  var gaps = [];            // gaps[r][h + HOFF] -> boolean, in-between slots
-  var pinPos = [];          // lattice positions, indexed the same way
+  // A single kind of nail. Slots are addressed by a half-column index h,
+  // and a ball at row r always sits on an h of the same parity as r --
+  // that is simply what "one half-column per row" means. So the slots a
+  // ball can ever meet are exactly those, and they are the only ones that
+  // can hold a nail. The classic triangle fills |h| <= r; the slots just
+  // outside it are reachable too once a ball has flown through a hole and
+  // carried on outwards, so they are offered as well.
+  var pins = [];            // pins[r][h + HOFF] -> boolean
+  var pinPos = [];          // matching lattice positions
   var HOFF = 0;             // shifts h into a non-negative array index
   var HSPAN = 0;            // number of half-slots per row
-
 
   function slotX(row, i) { return 0.5 + (i - row / 2) * COL_DX; }
   function slotY(row) { return TOP_Y + row * ROW_DY; }
@@ -548,31 +553,24 @@
   }
 
   // The ball moves one half-step per row, so at row r its position h has
-  // the same parity as r. The classic triangle therefore sits on the h
-  // that share the row's parity -- those are the default slots, and the
-  // in-between ones are the opposite parity, exactly half a column along.
+  // the same parity as r. Only those slots can ever be met by a ball, and
+  // they are the ones offered for editing.
   function sameParity(r, h) { return (((h - r) % 2) + 2) % 2 === 0; }
 
-  function isDefaultSlot(r, h) {
-    return sameParity(r, h) && Math.abs(h) <= r;
-  }
-  function isGapSlot(r, h) {
-    return !sameParity(r, h) && Math.abs(h) <= r + 1;
-  }
   function slotUsable(r, j) {
     var h = j - HOFF;
-    return isDefaultSlot(r, h) || isGapSlot(r, h);
+    return sameParity(r, h) && Math.abs(h) <= r + 2;
+  }
+
+  // The board's own nails: the classic triangle.
+  function isDefaultSlot(r, h) {
+    return sameParity(r, h) && Math.abs(h) <= r;
   }
 
   function pinAt(r, h) {
     var j = h + HOFF;
     if (j < 0 || j >= HSPAN) return false;
     return pins[r][j];
-  }
-  function gapAt(r, h) {
-    var j = h + HOFF;
-    if (j < 0 || j >= HSPAN) return false;
-    return gaps[r][j];
   }
 
   function defaultPins() {
@@ -585,47 +583,34 @@
     return p;
   }
 
-  function emptyGaps() {
-    var g = [];
-    for (var r = 0; r < ROWS; r++) {
-      var row = [];
-      for (var j = 0; j < HSPAN; j++) row.push(false);
-      g.push(row);
-    }
-    return g;
-  }
+  // A preset is expressed the way a visitor edits the board: by taking
+  // nails out. Thinning every second nail on one flank lets balls that
+  // stray there keep flying instead of being pulled back, which is what
+  // bends the distribution. No statistics are invented anywhere.
+  function scenarioPins(name) {
+    var p = defaultPins();
+    var r, h, rel, i = 0;
+    if (name === 'normal') return p;
 
-  // A preset is expressed the same way a visitor edits the board: by
-  // placing extra pins, never by inventing statistics. Adding in-between
-  // pins on one flank carries balls that reach it a further half column
-  // that way, which is what bends the distribution.
-  function scenarioBoard(name) {
-    var board = { pins: defaultPins(), gaps: emptyGaps() };
-    var r, h;
-    function addGap(r, h) {
-      var j = h + HOFF;
-      if (j >= 0 && j < HSPAN && isGapSlot(r, h)) board.gaps[r][j] = true;
-    }
-    if (name === 'warm') {
-      // In-between pins along the right flank: every ball that strays that
-      // way is carried further, so the whole heap slides warmwards while
-      // its shape survives.
-      for (r = 2; r < ROWS; r++) {
-        for (h = -r - 1; h <= r + 1; h++) {
-          if (h > 0) addGap(r, h);
-        }
-      }
-    } else if (name === 'extreme') {
-      // In-between pins on both outer flanks: the middle is untouched, so
-      // the mean stays put, but anything that wanders out is carried
-      // further out -- a wider curve with heavier tails.
-      for (r = 2; r < ROWS; r++) {
-        for (h = -r - 1; h <= r + 1; h++) {
-          if (Math.abs(h) > 2) addGap(r, h);
+    for (r = 2; r < ROWS; r++) {
+      for (h = -r; h <= r; h += 2) {
+        // The outermost nails of each row stay put: they are the backstop
+        // that turns an escaping ball around, and without them balls pile
+        // up against the wall instead of forming a curve.
+        if (Math.abs(h) > r - 4) continue;
+        rel = (h + r) / (2 * r);
+
+        var thin = (name === 'warm')
+          ? rel > 0.55                 // right flank only: the heap leans warm
+          : (rel > 0.30 && rel < 0.70); // centre: balls stop being re-centred
+
+        if (thin) {
+          i++;
+          if (i % 2 === 0) p[r][h + HOFF] = false;
         }
       }
     }
-    return board;
+    return p;
   }
 
   function countPins() {
@@ -633,7 +618,6 @@
     for (var r = 0; r < ROWS; r++) {
       for (var j = 0; j < HSPAN; j++) {
         if (pins[r][j]) n++;
-        if (gaps[r][j]) n++;
       }
     }
     return n;
@@ -664,7 +648,9 @@
   var toRelease = 0;     // how many are still queued
   var releaseTimer = 0;
   var releaseEvery = 0.055;  // seconds between drops, set per run
-  var MAX_LIVE = 120;        // cap on balls in flight at once
+  // No cap on how many balls may be in flight: a batch is meant to fall as
+  // one shower, and capping it made 365 balls arrive as three separate
+  // waves of 120.
 
   function spawnBall() {
     // h = the ball's position in half-columns. It moves one half-step per
@@ -676,6 +662,7 @@
       vx: 0,
       vy: 0.12,
       h: 0,
+      dir: 0,
       hop: true,
       nextRow: 0,
       lastTarget: 0.5,
@@ -720,34 +707,29 @@
       b.y = slotY(r) - PIN_R - BALL_R * 0.5;
 
       if (pinAt(r, b.h)) {
-        // A pin square in the ball's path: a fair coin sends it half a
-        // column left or right.
-        var step = Math.random() < 0.5 ? -1 : 1;
-
-        // An in-between pin sits half a column further on, exactly where
-        // the ball is heading. Clipping it carries the ball on to the next
-        // column instead of stopping it there.
-        if (gapAt(r, b.h + step)) step *= 2;
-
-        b.h += step;
+        // A nail in the ball's path: a fair coin sets the direction it
+        // leaves in, and it moves half a column that way.
+        b.dir = Math.random() < 0.5 ? -1 : 1;
         b.hop = true;
       } else {
-        // No pin here: nothing touches the ball, so it simply falls past
-        // this row and keeps its column. An empty slot is a hole, not an
-        // invisible obstacle.
+        // A hole: nothing touches the ball, so it simply keeps flying the
+        // way it already was. A ball dropping straight in stays straight;
+        // one that had just been deflected carries on out. That is what
+        // makes a missing nail matter -- it stops pulling balls back.
         b.hop = false;
       }
+      b.h += b.dir;
 
       var nxt = halfX(r + 1, b.h);
       if (b.hop) {
-        // Bounced off a pin: an upward kick plus exactly the sideways
-        // speed needed to arrive on the following slot.
+        // Struck a nail: an upward kick plus exactly the sideways speed
+        // needed to arrive on the following slot -- a visible bounce.
         b.vy = -BOUNCE;
         b.vx = (nxt - b.x) / hopTime(b.vy);
       } else {
-        // Fell through a gap: no kick and no sideways push, so the ball
-        // visibly drops past the empty spot instead of bouncing off it.
-        b.vx = 0;
+        // Flew through a hole: no kick, but it keeps its sideways travel,
+        // so it glides on past the empty spot instead of bouncing off it.
+        b.vx = (nxt - b.x) / hopTime(0);
       }
       b.nextRow++;
       if (b.nextRow >= ROWS) b.lastTarget = nxt;
@@ -842,46 +824,20 @@
     boardCtx.lineTo((0.5 + lastHalf) * W, lastY * H);
     boardCtx.stroke();
 
-    // --- pins, and the slots that can still take one ---
-    // Default slots always show: filled when they carry a pin, as a faint
-    // ring when empty, so removing and restoring one is discoverable.
-    // In-between slots stay invisible until a visitor puts a pin there --
-    // showing every one of them would double the visual clutter and bury
-    // the triangle the whole exhibit is about.
+    // --- nails ---
+    // Every nail looks the same, whether it came with the board or a
+    // visitor put it there: they behave identically, so they should read
+    // identically. A slot without a nail is simply blank -- a hole, drawn
+    // as nothing, because that is exactly what the ball meets there.
     var pr = radiusPx(PIN_R);
+    boardCtx.fillStyle = INK;
     for (var r = 0; r < ROWS; r++) {
       for (var j = 0; j < HSPAN; j++) {
-        var h = j - HOFF;
-        var isDef = isDefaultSlot(r, h);
-        var isGap = isGapSlot(r, h);
-        if (!isDef && !isGap) continue;
-
+        if (!pins[r][j]) continue;
         var p = pinPos[r][j];
-        var px = p.x * W, py = p.y * H;
-
-        if (isDef && pins[r][j]) {
-          boardCtx.fillStyle = INK;
-          boardCtx.beginPath();
-          boardCtx.arc(px, py, pr, 0, Math.PI * 2);
-          boardCtx.fill();
-        } else if (isGap && gaps[r][j]) {
-          // Drawn slightly smaller and hollow-centred, so an added pin is
-          // recognisably a different beast from the board's own ones.
-          boardCtx.fillStyle = INK;
-          boardCtx.beginPath();
-          boardCtx.arc(px, py, pr * 0.92, 0, Math.PI * 2);
-          boardCtx.fill();
-          boardCtx.fillStyle = 'rgba(255,255,255,.85)';
-          boardCtx.beginPath();
-          boardCtx.arc(px, py, pr * 0.34, 0, Math.PI * 2);
-          boardCtx.fill();
-        } else if (isDef) {
-          boardCtx.strokeStyle = 'rgba(17,17,17,.28)';
-          boardCtx.lineWidth = 1.5;
-          boardCtx.beginPath();
-          boardCtx.arc(px, py, pr * 0.8, 0, Math.PI * 2);
-          boardCtx.stroke();
-        }
+        boardCtx.beginPath();
+        boardCtx.arc(p.x * W, p.y * H, pr, 0, Math.PI * 2);
+        boardCtx.fill();
       }
     }
 
@@ -1121,12 +1077,10 @@
     if (!slot) return;
     ev.preventDefault();
 
-    var isDef = isDefaultSlot(slot.r, slot.h);
-    var store = isDef ? pins : gaps;
-    var has = store[slot.r][slot.j];
+    var has = pins[slot.r][slot.j];
     if (tool === 'add' && has) return;
     if (tool === 'remove' && !has) return;
-    store[slot.r][slot.j] = (tool === 'add');
+    pins[slot.r][slot.j] = (tool === 'add');
 
     // The heap is deliberately kept: editing the board while balls keep
     // arriving is how a visitor sees the distribution bend towards the new
@@ -1172,9 +1126,7 @@
     // A preset swaps the whole board, so the heap is cleared: the point of
     // the presets is to compare one finished distribution with another.
     // Hand-editing single pins deliberately keeps the heap instead.
-    var board = scenarioBoard(name);
-    pins = board.pins;
-    gaps = board.gaps;
+    pins = scenarioPins(name);
     scenarioBtns.forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-scenario') === name);
     });
@@ -1200,11 +1152,9 @@
   function describeCount(n) {
     // 365 is the anchor: one ball per day of a year. Nearby values are
     // described in the same currency so the slider stays meaningful.
-    if (n === 365) return '365 Kugeln — ein Jahr aus lauter einzelnen Wettertagen.';
-    if (n % 365 === 0) return n / 365 + ' Jahre mit je 365 Wettertagen.';
+    if (n === 365) return '365 Kugeln — ein volles Jahr aus lauter einzelnen Wettertagen.';
     if (n < 40) return n + ' Kugeln — viel zu wenige, um eine Form zu erkennen.';
-    if (n >= 1000) return n + ' Kugeln — rund ' + (n / 365).toFixed(1).replace('.', ',') + ' Jahre Wetter.';
-    return n + ' Kugeln — etwa ' + (n / 365).toFixed(1).replace('.', ',') + ' Jahre Wetter.';
+    return n + ' Kugeln — ' + Math.round(n / 365 * 12) + ' Monate Wetter.';
   }
 
   function updateCountLabel() {
@@ -1236,7 +1186,9 @@
     // visitor can keep topping up the same distribution -- and can edit
     // the pins in between, which is the whole point of the exhibit.
     toRelease += n;
-    releaseEvery = Math.max(0.006, Math.min(0.07, 8 / Math.max(1, n)));
+    // The whole batch leaves the funnel within roughly a second, so it
+    // falls as a single shower rather than a slow trickle.
+    releaseEvery = Math.max(0.002, Math.min(0.05, 1.2 / Math.max(1, n)));
   }
 
   function startRun() {
@@ -1262,7 +1214,6 @@
 
   resetBtn.addEventListener('click', function () {
     pins = defaultPins();
-    gaps = emptyGaps();
     scenarioBtns.forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-scenario') === 'normal');
     });
@@ -1287,7 +1238,7 @@
 
     // release queued balls at a steady rate
     releaseTimer += dt;
-    while (releaseTimer >= releaseEvery && toRelease > 0 && balls.length < MAX_LIVE) {
+    while (releaseTimer >= releaseEvery && toRelease > 0) {
       releaseTimer -= releaseEvery;
       spawnBall();
       toRelease--;
@@ -1354,7 +1305,6 @@
   function init() {
     buildLattice();
     pins = defaultPins();
-    gaps = emptyGaps();
     setupViewToggle();
     layout();
     setTool('add');
