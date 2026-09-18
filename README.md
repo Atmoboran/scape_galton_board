@@ -27,13 +27,17 @@ cases that the accompanying text explains.
   bounces rather than gliding, and crosses the board in about 1.5 s. Balls
   may only settle once every pin row is behind them, so a growing heap can
   never intercept a ball that is still choosing its column.
-- Slots are addressed by a half-column index h whose parity follows the
-  row's, because the ball moves one half-step per row. The classic triangle
-  sits on the slots sharing that parity; the *in-between* slots are the
-  opposite parity, exactly half a column along, and start empty. A pin
-  there does not catch a ball head-on but clips its shoulder, biasing the
-  left/right choice rather than deciding it. They are not drawn until a
-  visitor places one, so the triangle stays legible.
+- Every nail behaves the same way and every ball that reaches one bounces
+  off it. A nail on a row is met head-on and splits the flow with a fair
+  coin (half a column either way). A nail wedged between two rows is met
+  off-centre, so it cannot split the flow: it throws the ball clear, a
+  whole column outward. A whole column rather than half keeps landings on
+  the lattice the bins are built on, which is what stops the histogram
+  breaking into a comb.
+- Because a wedged nail deflects every ball that reaches it, a handful is
+  enough: the presets use four nails for a warmer climate and six for a
+  wilder one, placed well inside the triangle so no ball is thrown past
+  the rows below.
 - A ball enters at the apex and moves at most one column per row, so it can
   only ever reach |h| <= r at row r. That wedge is tinted on the board and
   bounds where pins can go: a pin outside it is provably unreachable, and

@@ -131,13 +131,13 @@
   .section-label.with-help{
     display:flex; align-items:center; gap:8px; justify-content:space-between;
   }
-  #nail-help{
+  .info-dot{
     flex:none; width:20px; height:20px; padding:0;
     border:2px solid var(--ink); background:var(--paper); color:var(--ink);
     font-family:inherit; font-weight:800; font-size:12px; line-height:1;
-    border-radius:50%; cursor:pointer;
+    border-radius:50%; cursor:pointer; vertical-align:middle;
   }
-  #nail-help[aria-expanded="true"]{ background:var(--ink); color:var(--paper); }
+  .info-dot[aria-expanded="true"]{ background:var(--ink); color:var(--paper); }
   .help-pop{
     border:2px solid var(--ink); background:var(--pastel-yellow);
     padding:11px 13px; margin:0 0 10px;
@@ -148,10 +148,31 @@
   .help-pop p:last-child{ margin-bottom:0; }
 
   /* ============ EXPLAINER / BLURB ============ */
-  .explainer{ margin:30px 0 10px; }
-  .explainer h2{
-    margin:0 0 10px; font-size:19px; font-weight:800; letter-spacing:-.01em;
+  .explainer{ margin:26px 0 10px; }
+
+  /* Collapsible topics: the page opens short, and a visitor pulls down
+     only the explanation they actually want. */
+  details.topic{
+    border-top:2px solid var(--ink);
+    padding:0;
   }
+  details.topic:last-of-type{ border-bottom:2px solid var(--ink); }
+  details.topic > summary{
+    list-style:none; cursor:pointer;
+    display:flex; align-items:center; gap:10px; justify-content:space-between;
+    padding:14px 0;
+    font-size:14px; font-weight:800; letter-spacing:-.01em;
+  }
+  details.topic > summary::-webkit-details-marker{ display:none; }
+  details.topic > summary::after{
+    content:"+";
+    flex:none; width:22px; height:22px;
+    border:2px solid var(--ink); border-radius:50%;
+    font-size:14px; font-weight:800; line-height:18px; text-align:center;
+  }
+  details.topic[open] > summary::after{ content:"\2013"; background:var(--ink); color:var(--paper); }
+  details.topic > summary:focus-visible{ outline:2px solid var(--navy); outline-offset:2px; }
+  .topic-body{ padding:0 0 6px; }
   .explainer h3{
     margin:22px 0 8px; font-size:14px; font-weight:800; letter-spacing:.02em;
   }
@@ -275,9 +296,6 @@
   .hint{
     margin-top:12px; font-size:11.5px; font-weight:500; color:var(--ink); text-align:center;
   }
-  .build-tag{
-    margin-top:26px; font-size:9.5px; font-weight:600; color:var(--ink); text-align:center; opacity:.4;
-  }
 
   /* ============ SCENARIO CARDS ============ */
   .scenario-row{ display:flex; gap:8px; margin-bottom:10px; }
@@ -311,7 +329,7 @@
      when a visitor explicitly picks the desktop view via the toggle. */
   :root[data-view="desktop"] .wrap{ max-width:760px; }
   :root[data-view="desktop"] .poster-title{ font-size:clamp(26px,5vw,38px); }
-  :root[data-view="desktop"] .explainer h2{ font-size:22px; }
+  :root[data-view="desktop"] details.topic > summary{ font-size:16px; }
   :root[data-view="desktop"] p.blurb{ font-size:15.5px; }
   :root[data-view="desktop"] .stage-card{
     max-width:470px; margin-left:auto; margin-right:auto;
@@ -320,7 +338,10 @@
   :root[data-view="desktop"] .readout,
   :root[data-view="desktop"] .slider-row,
   :root[data-view="desktop"] .seg-row,
-  :root[data-view="desktop"] .scenario-row{ max-width:470px; margin-left:auto; margin-right:auto; }
+  :root[data-view="desktop"] .scenario-row,
+  :root[data-view="desktop"] .help-pop,
+  :root[data-view="desktop"] .section-label,
+  :root[data-view="desktop"] .hint{ max-width:470px; margin-left:auto; margin-right:auto; }
   :root[data-view="desktop"] .btn-row button:hover:not(:disabled){ opacity:.85; }
   :root[data-view="desktop"] .seg-btn:hover:not(:disabled){ opacity:.85; }
 </style>
@@ -355,16 +376,30 @@
     </div>
     <div class="poster-copy">
       <h1 class="poster-title">Klima ist Statistik</h1>
-      <p class="poster-tagline">Eine Kugel ist Wetter. Der Berg aus tausend Kugeln ist Klima. Verschiebe die N&auml;gel &mdash; und der Berg wandert mit.</p>
+      <p class="poster-tagline">Eine Kugel ist Wetter. Der Berg aus vielen Kugeln ist Klima. Verschiebe die N&auml;gel &mdash; und der Berg wandert mit.</p>
     </div>
   </div>
 
   <main>
     <div class="intro-blurb">
-      <p class="blurb"><b>So funktioniert's:</b> Jede Kugel ist <b>ein Wetterereignis</b> &mdash; ein einzelner Tag, zuf&auml;llig und unvorhersagbar. Der Berg, den viele Kugeln zusammen bilden, ist das <b>Klima</b>. Mit <b>Einzeln</b> schickst du eine einzige Kugel los und siehst, wie wenig sie verr&auml;t; mit <b>Start</b> kommt ein ganzer Schwall. Du kannst jederzeit <b>weitere Kugeln zugeben</b> und dabei <b>N&auml;gel setzen oder entfernen</b> &mdash; der Berg bleibt liegen und biegt sich sichtbar in die neue Form. Die N&auml;gel sind die Spielregeln des Systems: &auml;nderst du sie, &auml;ndert sich die ganze Verteilung.</p>
+      <p class="blurb"><b>Eine Kugel ist ein Wettertag. Der Berg aus vielen Kugeln ist das Klima.</b>
+        <button type="button" class="info-dot" data-help="intro-help" aria-expanded="false" aria-controls="intro-help" aria-label="Mehr erfahren">?</button>
+      </p>
+      <div class="help-pop" id="intro-help" hidden>
+        <p>Mit <b>Einzeln</b> schickst du eine einzige Kugel los und siehst, wie wenig sie verr&auml;t; mit <b>Start</b> kommt ein ganzer Schwall.</p>
+        <p>Du kannst jederzeit weitere Kugeln zugeben und dabei N&auml;gel setzen oder entfernen &mdash; der Berg bleibt liegen und biegt sich sichtbar in die neue Form. Die N&auml;gel sind die Spielregeln des Systems: &auml;nderst du sie, &auml;ndert sich die ganze Verteilung.</p>
+      </div>
     </div>
 
-    <div class="section-label first">Szenario</div>
+    <div class="section-label first with-help">
+      <span>Szenario</span>
+      <button type="button" class="info-dot" data-help="scenario-help" aria-expanded="false" aria-controls="scenario-help" aria-label="Szenarien erkl&auml;ren">?</button>
+    </div>
+    <div class="help-pop" id="scenario-help" hidden>
+      <p>Die Szenarien erfinden keine Statistik &mdash; sie keilen nur ein paar zus&auml;tzliche N&auml;gel zwischen die Reihen, genau wie du es von Hand tun kannst.</p>
+      <p><b>W&auml;rmer:</b> vier N&auml;gel rechts. Jede Kugel, die dorthin gelangt, wird weiter nach rechts geworfen &mdash; der ganze Berg wandert mit.</p>
+      <p><b>Mehr Extreme:</b> sechs N&auml;gel auf beiden Au&szlig;enseiten. Der Mittelwert bleibt, aber die Spitze sinkt und der Berg wird breiter.</p>
+    </div>
     <div class="scenario-row" id="scenario-row">
       <button class="scenario-btn active" data-scenario="normal">Normal&shy;klima</button>
       <button class="scenario-btn" data-scenario="warm">W&auml;rmer</button>
@@ -373,11 +408,12 @@
 
     <div class="section-label with-help">
       <span>N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</span>
-      <button type="button" id="nail-help" aria-expanded="false" aria-controls="nail-help-text" aria-label="Erkl&auml;rung anzeigen">?</button>
+      <button type="button" class="info-dot" data-help="nail-help-text" aria-expanded="false" aria-controls="nail-help-text" aria-label="Erkl&auml;rung anzeigen">?</button>
     </div>
     <div class="help-pop" id="nail-help-text" hidden>
       <p>Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden.</p>
-      <p>Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel. So ein eingekeilter Nagel trifft die Kugel schr&auml;g und schiebt sie meist weiter nach au&szlig;en.</p>
+      <p>Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel. So ein eingekeilter Nagel steht schr&auml;g im Weg: Jede Kugel, die ihn erreicht, prallt an ihm ab und wird eine Spalte nach au&szlig;en geworfen. Schon vier solche N&auml;gel verschieben den ganzen Berg sichtbar.</p>
+      <p>Nur im hellen Dreieck kommen &uuml;berhaupt Kugeln vorbei &mdash; nur dort wirken N&auml;gel.</p>
     </div>
     <div class="seg-row" id="tool-row">
       <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
@@ -427,26 +463,31 @@
       </button>
     </div>
     <div class="hint" id="hint">Ein einzelner Wurf sagt nichts. Erst viele Kugeln zeigen das Klima.</div>
-    <div class="hint" style="opacity:.62; margin-top:6px;">Nur im hellen Dreieck kommen Kugeln vorbei &mdash; nur dort wirken N&auml;gel.</div>
 
     <div class="explainer">
-      <h2>Wetter oder Klima?</h2>
-      <p class="blurb">
-        Eine einzelne Kugel l&auml;uft durch das Brett und landet irgendwo. Wo genau, kann niemand vorhersagen &mdash; an jedem Nagel entscheidet ein Hauch von Zufall &uuml;ber links oder rechts. Das ist <b>Wetter</b>: ein einzelnes Ereignis, kurzfristig, launisch, im Detail nicht planbar. Ein kalter Julitag, ein Sturm, ein Rekordsommer &mdash; jeweils eine Kugel.
-      </p>
-      <p class="blurb">
-        Lasse jedoch tausend Kugeln fallen, entsteht aus lauter Zufall etwas erstaunlich Stabiles: eine glockenf&ouml;rmige Verteilung. Sie sagt zwar nichts &uuml;ber die n&auml;chste Kugel aus, daf&uuml;r alles &uuml;ber das System als Ganzes. Das ist <b>Klima</b> &mdash; nicht das Wetter von morgen, sondern die <b>Statistik des Wetters</b> &uuml;ber lange Zeitr&auml;ume, klassischerweise &uuml;ber 30 Jahre gemittelt. Klima ist die Form des Berges; Wetter ist die einzelne Kugel darin.
-      </p>
-      <p class="blurb">
-        Deshalb ist der Satz &bdquo;Es war doch letzte Woche kalt, also gibt es keinen Klimawandel&ldquo; ein Denkfehler: Er verwechselt eine Kugel mit dem Berg. Selbst in einem deutlich w&auml;rmeren Klima f&auml;llt noch die eine oder andere Kugel weit links &mdash; nur eben seltener.
-      </p>
+      <details class="topic">
+        <summary>Wetter oder Klima?</summary>
+        <div class="topic-body">
+          <p class="blurb">
+            Eine einzelne Kugel l&auml;uft durch das Brett und landet irgendwo. Wo genau, kann niemand vorhersagen &mdash; an jedem Nagel entscheidet ein Hauch von Zufall &uuml;ber links oder rechts. Das ist <b>Wetter</b>: ein einzelnes Ereignis, kurzfristig, launisch, im Detail nicht planbar. Ein kalter Julitag, ein Sturm, ein Rekordsommer &mdash; jeweils eine Kugel.
+          </p>
+          <p class="blurb">
+            Lasse jedoch viele hundert Kugeln fallen, entsteht aus lauter Zufall etwas erstaunlich Stabiles: eine glockenf&ouml;rmige Verteilung. Sie sagt zwar nichts &uuml;ber die n&auml;chste Kugel aus, daf&uuml;r alles &uuml;ber das System als Ganzes. Das ist <b>Klima</b> &mdash; nicht das Wetter von morgen, sondern die <b>Statistik des Wetters</b> &uuml;ber lange Zeitr&auml;ume, klassischerweise &uuml;ber 30 Jahre gemittelt. Klima ist die Form des Berges; Wetter ist die einzelne Kugel darin.
+          </p>
+          <p class="blurb">
+            Deshalb ist der Satz &bdquo;Es war doch letzte Woche kalt, also gibt es keinen Klimawandel&ldquo; ein Denkfehler: Er verwechselt eine Kugel mit dem Berg. Selbst in einem deutlich w&auml;rmeren Klima f&auml;llt noch die eine oder andere Kugel weit links &mdash; nur eben seltener.
+          </p>
+        </div>
+      </details>
 
-      <h2>Was der Klimawandel mit dem Brett macht</h2>
-      <p class="blurb">
-        Der Klimawandel w&uuml;rfelt nicht die einzelnen Kugeln neu &mdash; er baut das Brett um. Mehr Treibhausgase in der Atmosph&auml;re ver&auml;ndern die Spielregeln, nach denen sich das Wetter einstellt. In diesem Exponat &uuml;bernimmst du diese Rolle: Jeder Nagel, den du setzt oder entfernst, lenkt die Kugeln anders ab und ver&auml;ndert damit die gesamte Verteilung. Statistiker sprechen von drei Effekten, die sich in Messdaten weltweit zeigen.
-      </p>
+      <details class="topic">
+        <summary>Was der Klimawandel mit dem Brett macht</summary>
+        <div class="topic-body">
+          <p class="blurb">
+            Der Klimawandel w&uuml;rfelt nicht die einzelnen Kugeln neu &mdash; er baut das Brett um. Mehr Treibhausgase in der Atmosph&auml;re ver&auml;ndern die Spielregeln, nach denen sich das Wetter einstellt. In diesem Exponat &uuml;bernimmst du diese Rolle: Jeder Nagel, den du setzt oder entfernst, lenkt die Kugeln anders ab und ver&auml;ndert damit die gesamte Verteilung. Statistiker sprechen von drei Effekten, die sich in Messdaten weltweit zeigen.
+          </p>
 
-      <h3>1. Verschiebung des Mittels</h3>
+          <h3>1. Verschiebung des Mittels</h3>
       <figure class="figure">
         <svg viewBox="0 0 320 130" aria-label="Zwei Glockenkurven, die zweite nach rechts verschoben">
           <line x1="12" y1="108" x2="308" y2="108" stroke="#111" stroke-width="2"/>
@@ -460,8 +501,7 @@
         </svg>
         <figcaption><b>Der ganze Berg wandert nach rechts.</b> Die Streuung bleibt gleich, aber alles wird w&auml;rmer: Was fr&uuml;her ein hei&szlig;er Sommer war, ist nun ein durchschnittlicher. Neue Rekordhitze taucht auf, extreme K&auml;lte wird selten.</figcaption>
       </figure>
-
-      <h3>2. Zunahme der Streuung</h3>
+          <h3>2. Zunahme der Streuung</h3>
       <figure class="figure">
         <svg viewBox="0 0 320 130" aria-label="Eine schmale und eine breite, flachere Glockenkurve">
           <line x1="12" y1="108" x2="308" y2="108" stroke="#111" stroke-width="2"/>
@@ -474,8 +514,7 @@
         </svg>
         <figcaption><b>Der Berg wird breiter und flacher.</b> Der Mittelwert kann gleich bleiben &mdash; trotzdem schwankt das Wetter st&auml;rker. Beide Enden wachsen: mehr Hitze <em>und</em> mehr Ausrei&szlig;er nach unten, mehr D&uuml;rre <em>und</em> mehr Starkregen.</figcaption>
       </figure>
-
-      <h3>3. Wirkung auf die Extreme</h3>
+          <h3>3. Wirkung auf die Extreme</h3>
       <figure class="figure">
         <svg viewBox="0 0 320 130" aria-label="Verschobene und verbreiterte Kurve mit stark vergroessertem rechten Ende">
           <line x1="12" y1="108" x2="308" y2="108" stroke="#111" stroke-width="2"/>
@@ -488,22 +527,24 @@
         </svg>
         <figcaption><b>Am Rand wird aus wenig sehr viel.</b> Eine kleine Verschiebung des Mittels vervielfacht die F&auml;lle jenseits der Schwelle &mdash; weil die Glockenkurve dort steil abf&auml;llt. Aus einem &bdquo;Jahrhundertsommer&ldquo; wird so binnen Jahrzehnten ein Ereignis, das mehrfach pro Generation auftritt.</figcaption>
       </figure>
+        </div>
+      </details>
 
-      <h2>Warum ausgerechnet eine Glockenkurve?</h2>
-      <p class="blurb">
-        Das Galton-Brett, benannt nach dem britischen Forscher Francis Galton (1822&ndash;1911), demonstriert einen der tiefsten S&auml;tze der Mathematik: den <b>zentralen Grenzwertsatz</b>. Er besagt, dass sich viele kleine, unabh&auml;ngige Zufallseinfl&uuml;sse &mdash; hier: das Abprallen an jedem einzelnen Nagel &mdash; in der Summe fast immer zu einer Normalverteilung addieren, der ber&uuml;hmten Glockenkurve.
-      </p>
-      <p class="blurb">
-        Genau das passiert auch in der Atmosph&auml;re: Die Temperatur eines Tages ergibt sich aus unz&auml;hligen Einfl&uuml;ssen &mdash; Bew&ouml;lkung, Windrichtung, Bodenfeuchte, Meeresstr&ouml;mungen. Deshalb sind Klimagr&ouml;&szlig;en wie die Tagesmitteltemperatur in guter N&auml;herung glockenf&ouml;rmig verteilt. Andere Gr&ouml;&szlig;en, etwa Niederschlagsmengen, sind stark unsymmetrisch &mdash; auch das l&auml;sst sich hier nachbauen, indem du die N&auml;gel bewusst ungleichm&auml;&szlig;ig setzt.
-      </p>
-      <p class="blurb">
-        Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 1000 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
-      </p>
-      <p class="blurb">
-        <b>Probiere es aus:</b> Setze zus&auml;tzliche N&auml;gel zwischen die Reihen &mdash; nur rechts, und der ganze Berg wandert nach rechts; auf beiden Au&szlig;enseiten, und er wird breiter, ohne dass sich der Mittelwert verschiebt. Genau so arbeiten auch die Szenarien oben: Sie erfinden keine Statistik, sie stellen nur N&auml;gel um. Im Szenario <em>Mehr Extreme</em> bleibt der Mittelwert praktisch unver&auml;ndert &mdash; der Berg wird flacher und breiter: die Streuung w&auml;chst um rund die H&auml;lfte, die Spitze in der Mitte sinkt, und der Anteil der Kugeln in den &auml;u&szlig;eren R&auml;ndern steigt auf ein Vielfaches. Das ist der Kern der Sache: Ein Klima kann im Mittel gleich <em>aussehen</em> und trotzdem ein Vielfaches an Extremereignissen liefern.
-      </p>
+      <details class="topic">
+        <summary>Warum ausgerechnet eine Glockenkurve?</summary>
+        <div class="topic-body">
+          <p class="blurb">
+            Das Galton-Brett, benannt nach dem britischen Forscher Francis Galton (1822&ndash;1911), demonstriert einen der tiefsten S&auml;tze der Mathematik: den <b>zentralen Grenzwertsatz</b>. Er besagt, dass sich viele kleine, unabh&auml;ngige Zufallseinfl&uuml;sse &mdash; hier: das Abprallen an jedem einzelnen Nagel &mdash; in der Summe fast immer zu einer Normalverteilung addieren, der ber&uuml;hmten Glockenkurve.
+          </p>
+          <p class="blurb">
+            Genau das passiert auch in der Atmosph&auml;re: Die Temperatur eines Tages ergibt sich aus unz&auml;hligen Einfl&uuml;ssen &mdash; Bew&ouml;lkung, Windrichtung, Bodenfeuchte, Meeresstr&ouml;mungen. Deshalb sind Klimagr&ouml;&szlig;en wie die Tagesmitteltemperatur in guter N&auml;herung glockenf&ouml;rmig verteilt. Andere Gr&ouml;&szlig;en, etwa Niederschlagsmengen, sind stark unsymmetrisch &mdash; auch das l&auml;sst sich hier nachbauen, indem du die N&auml;gel bewusst ungleichm&auml;&szlig;ig setzt.
+          </p>
+          <p class="blurb">
+            Und noch etwas zeigt das Brett: Wie viele Kugeln man braucht, um &uuml;berhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 365 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher &uuml;ber 30 Jahre: k&uuml;rzere Zeitr&auml;ume sind schlicht zu verrauscht, um ein Signal vom Zufall zu trennen.
+          </p>
+        </div>
+      </details>
     </div>
-    <div class="build-tag">build v1</div>
   </main>
 
   <footer class="brand-footer">
@@ -531,12 +572,6 @@
   // sixteenth of the gravity. The bounce is scaled with it so the arc keeps
   // the same shape rather than turning into a flat skim.
   var GRAVITY = 0.1406;     // unit-space gravity -- a full drop takes ~12s
-  // A wedged nail is small and sits off to one side, so most balls slip
-  // past it untouched. When it does catch one it nudges it half a column
-  // onward -- gentle enough that every bin stays populated and the curve
-  // keeps its shape instead of breaking into spikes.
-  var GAP_CATCH = 0.14;     // chance a wedged nail actually touches a ball
-  var gapCatch = GAP_CATCH; // the value in force, set per scenario
   var BOUNCE = 0.0125;      // upward kick off a pin, so the hop is a real arc
   var SUBSTEPS = 2;
   var DT = 1 / 60 / SUBSTEPS;
@@ -633,26 +668,31 @@
   // direction it was already travelling. Placing such nails on one flank
   // therefore leans the whole distribution that way, and placing them on
   // both flanks widens it without moving the mean.
+  // A preset is expressed the way a visitor edits the board: by wedging a
+  // few extra nails between the rows. Every one of them deflects every
+  // ball that reaches it, so a handful is enough -- four for a warmer
+  // climate, six for a wilder one.
+  //
+  // They are kept well inside the triangle. A ball thrown outward from its
+  // edge would miss the rows below and land between two bins, which shows
+  // up as a comb of half-empty columns.
   function scenarioPins(name) {
     var p = defaultPins();
-    var q, h, r;
-    gapCatch = GAP_CATCH;
     if (name === 'normal') return p;
 
-    // Only the lower part of the board, so the funnel still spreads balls
-    // normally before the scenario starts acting on them.
-    var from = (name === 'warm') ? 9 : 11;
-    gapCatch = (name === 'warm') ? 0.12 : 0.16;
+    var warm = (name === 'warm');
+    var levels = warm ? [13, 15] : [9, 11];
+    var minH = warm ? 2 : 1;
 
-    for (q = from; q < LEVELS; q += 2) {
-      r = levelReach(q);
-      for (h = -r; h <= r; h += 2) {
-        var put = (name === 'warm')
-          ? h > -1            // right of centre: the heap leans warm
-          : Math.abs(h) > 1;  // everywhere but the very middle, so the peak
-                              // itself comes down: this is a wider spread,
-                              // not a tall peak with fatter tails
-        if (put) p[q][h + HOFF] = true;
+    for (var i = 0; i < levels.length; i++) {
+      var q = levels[i];
+      var r = levelReach(q);
+      for (var h = -r; h <= r; h += 2) {
+        // Warm leans the board one way; extreme opens both flanks.
+        if (warm ? h <= minH : Math.abs(h) <= minH) continue;
+        // Keep the throw inside the triangle of the row below.
+        if (Math.abs(h) + 2 > (q >> 1) + 1) continue;
+        p[q][h + HOFF] = true;
       }
     }
     return p;
@@ -753,21 +793,21 @@
       b.x = halfX(0, b.h);
       b.y = levelY(q) - PIN_R - BALL_R * 0.5;
 
-      var hitRow = (q % 2 === 0) && pinAt(q, b.h);
-      var hitGap = (q % 2 === 1) && pinAt(q, b.h) && Math.random() < gapCatch;
+      var nail = pinAt(q, b.h);
 
-      if (hitRow) {
+      if (nail && q % 2 === 0) {
         // A nail on the row itself: met head-on, so a fair coin sends the
         // ball half a column left or right.
         b.dir = Math.random() < 0.5 ? -1 : 1;
         b.h += b.dir;
         b.hop = true;
-      } else if (hitGap) {
-        // A nail wedged into a gap, clipped off-centre: the ball has to
-        // clear the neighbouring nails to get past, so it is carried a
-        // whole column onward -- the way it was already travelling. A
-        // whole column, not half, because a half step would leave the ball
-        // between two bins and the curve would break into spikes.
+      } else if (nail) {
+        // A nail wedged between two rows. It sits off to one side, so the
+        // ball cannot split on it -- it is thrown clear, outward, past the
+        // neighbouring nail and into the next column. Every ball that
+        // reaches it bounces: that is what makes an added nail visible.
+        // A whole column, not half, so the ball stays on the lattice the
+        // bins are built on.
         b.dir = b.h > 0 ? 1 : (b.h < 0 ? -1 : (Math.random() < 0.5 ? 1 : -1));
         b.h += 2 * b.dir;
         b.hop = true;
@@ -778,7 +818,7 @@
         b.h += b.dir;
         b.hop = false;
       } else {
-        // Empty air between two rows, or a wedged nail the ball missed.
+        // Empty air between two rows.
         b.hop = false;
       }
 
@@ -1173,12 +1213,15 @@
     toolAddBtn.classList.toggle('active', t === 'add');
     toolRemoveBtn.classList.toggle('active', t === 'remove');
   }
-  var nailHelpBtn = document.getElementById('nail-help');
-  var nailHelpText = document.getElementById('nail-help-text');
-  nailHelpBtn.addEventListener('click', function () {
-    var open = nailHelpText.hidden;
-    nailHelpText.hidden = !open;
-    nailHelpBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  // Every '?' works the same way: it shows the panel named in data-help.
+  Array.prototype.forEach.call(document.querySelectorAll('.info-dot'), function (btn) {
+    var panel = document.getElementById(btn.getAttribute('data-help'));
+    if (!panel) return;
+    btn.addEventListener('click', function () {
+      var show = panel.hidden;
+      panel.hidden = !show;
+      btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+    });
   });
 
   toolAddBtn.addEventListener('click', function () { setTool('add'); });
