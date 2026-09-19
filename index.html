@@ -183,20 +183,16 @@
   .intro-blurb p.blurb{ margin-bottom:0; }
 
   /* ============ SEGMENTED CONTROLS ============ */
-  /* One row, three brushes: setting and removing a nail are two states of
-     the same tool, clearing the board is a one-shot action beside them.
-     Single-line labels (the popover already spells the behaviour out) keep
-     the whole group to one compact row instead of a caption-stacked pair. */
+  /* A single action button (clear every nail); a tap on the board itself
+     now adds or removes a nail directly, so no mode toggle is needed here
+     any more. */
   .seg-row{ display:flex; gap:8px; margin-bottom:10px; }
   .seg-btn{
     flex:1; border:2px solid var(--ink); background:var(--paper); color:var(--ink);
     font-family:inherit; font-weight:800; font-size:11px; text-transform:uppercase;
     letter-spacing:.02em; padding:10px 4px; cursor:pointer; text-align:center; line-height:1.2;
   }
-  .seg-btn.active{ background:var(--ink); color:var(--paper); }
   .seg-btn:disabled{ opacity:.4; cursor:default; }
-  .seg-btn.tool-add.active{ background:var(--green); border-color:var(--green); color:#fff; }
-  .seg-btn.tool-remove.active{ background:var(--red); border-color:var(--red); color:#fff; }
   .seg-btn.tool-wipe:active{ background:var(--ink); color:var(--paper); }
 
   /* ============ DEV PANEL ============ */
@@ -228,20 +224,14 @@
     font-variant-numeric:tabular-nums; margin-top:10px;
   }
   .dev-note{ font-size:10px; font-weight:600; line-height:1.45; opacity:.75; margin-top:6px; }
-  .dev-slider-row{ margin-bottom:10px; }
-  .dev-slider-head{
-    display:flex; justify-content:space-between; align-items:baseline;
-    font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
-    margin-bottom:6px;
-  }
-  .dev-slider-head b{ font-size:12px; font-weight:700; letter-spacing:0; }
 
   /* ============ SIM STAGE ============ */
   .stage-card{
-    margin:0 0 14px;
+    margin:0 0 10px;
     border:2px solid var(--ink);
     background:var(--cream);
     position:relative;
+    overflow:hidden; /* clips the board when zoomed, inside the card frame */
   }
   .stage{
     position:relative;
@@ -249,6 +239,7 @@
     aspect-ratio:3/4;
     touch-action:none;
     overflow:hidden;
+    transform-origin:center center;
   }
   .stage canvas{
     position:absolute; inset:0;
@@ -268,47 +259,100 @@
   @keyframes badge-pulse{ 0%,100%{ background:var(--paper); } 50%{ background:var(--bright-yellow); } }
   .stage-hint-badge.attn{ animation:badge-pulse 1.1s ease-in-out infinite; }
 
+  /* A small speech-bubble over a histogram column, showing its exact
+     count. Lives inside .stage so it pans and zooms with the board. */
+  .bin-tooltip{
+    position:absolute; z-index:5; transform:translate(-50%,-130%);
+    background:var(--ink); color:var(--paper);
+    font-weight:800; font-size:11px; letter-spacing:.02em;
+    padding:4px 8px; white-space:nowrap; pointer-events:none;
+  }
+  .bin-tooltip[hidden]{ display:none; }
+  .bin-tooltip::after{
+    content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:var(--ink);
+  }
+
+  /* Floating +/- pair for precise nail placement, pinned to the card frame
+     so it never pans or scales away with the board underneath it. */
+  .zoom-ctl{
+    position:absolute; right:8px; bottom:8px; z-index:4;
+    display:flex; gap:6px;
+  }
+  .zoom-ctl button{
+    width:30px; height:30px; border:2px solid var(--ink); background:var(--paper);
+    color:var(--ink); font-family:inherit; font-weight:800; font-size:16px;
+    line-height:1; cursor:pointer; padding:0;
+  }
+  .zoom-ctl button:disabled{ opacity:.35; cursor:default; }
+  .zoom-ctl button:active:not(:disabled){ background:var(--ink); color:var(--paper); }
+  #zoom-reset{ font-size:10px; }
+
+  .axis-note{
+    font-size:10.5px; font-weight:600; line-height:1.5; opacity:.8;
+    margin:8px 0 16px;
+  }
+
+  /* ============ COMPARISON LINES ============ */
+  .compare-label{ margin-top:0; }
+  .compare-row{ display:flex; gap:8px; margin-bottom:16px; }
+  .compare-chip{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    height:34px; border:2px solid var(--ink); background:var(--paper);
+    cursor:pointer; padding:0;
+  }
+  .compare-num{
+    font-family:inherit; font-weight:800; font-size:13px; color:var(--ink);
+  }
+  .compare-chip.filled{ border-style:dashed; }
+  .compare-chip[data-slot="0"].filled{ background:#c65a2a; border-color:#c65a2a; }
+  .compare-chip[data-slot="1"].filled{ background:#4a2e83; border-color:#4a2e83; }
+  .compare-chip[data-slot="2"].filled{ background:#1093c4; border-color:#1093c4; }
+  .compare-chip.filled .compare-num{ color:#fff; }
+
   /* ============ READOUT ============ */
   .readout{
-    display:flex; gap:10px; flex-wrap:nowrap;
+    display:flex; gap:6px; flex-wrap:nowrap; align-items:stretch;
     margin-bottom:18px; padding:14px 0; border-top:2px solid var(--ink); border-bottom:2px solid var(--ink);
   }
-  /* Four equal columns on one line: the labels are short enough to fit even
-     on a narrow phone once they may break across two lines. */
-  .readout div{
-    flex:1 1 0; min-width:0;
+  /* Five columns on one line, four of them squeezable: their labels are
+     single words that cannot break at a natural point, so a narrow phone
+     (with the fixed-width Start stepper eating into the row) wraps one
+     mid-word onto a second line via overflow-wrap rather than overflowing
+     into its neighbour -- ugly only in the sense that it is still legible,
+     which overlapping text is not. */
+  .readout > div{
+    flex:1 1 0; min-width:0; overflow-wrap:break-word;
     font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
     line-height:1.25;
   }
   .readout b{ display:block; font-size:14px; font-weight:700; letter-spacing:0; margin-top:3px; text-transform:none; }
 
-  /* ============ SLIDER ============ */
-  .slider-row{ margin-bottom:16px; }
-  .slider-head{
-    display:flex; justify-content:space-between; align-items:baseline;
-    font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
-    margin-bottom:8px;
+  /* The fifth column: how many balls the next Start queues up. A pair of
+     small buttons rather than a full-width drag bar, on purpose -- a
+     slider that wide sat exactly where a thumb scrolling the page swept
+     past, and kept getting bumped by accident. Sized to its content and
+     never shrunk (unlike the four stat columns, whose short values can
+     take the squeeze on a narrow phone) so the number and the + button
+     never fight over the same pixels. */
+  .readout > .ro-start{ flex:0 0 auto; }  /* beats ".readout > div"'s flex:1 1 0 on specificity */
+  .ro-start > span{
+    font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
   }
-  .slider-head b{ font-size:14px; letter-spacing:0; }
-  input[type=range]{
-    -webkit-appearance:none; appearance:none;
-    width:100%; height:22px; background:transparent; cursor:pointer; margin:0;
+  .ro-start-ctl{
+    display:flex; align-items:center; gap:2px; margin-top:3px;
   }
-  input[type=range]::-webkit-slider-runnable-track{
-    height:6px; background:var(--paper); border:2px solid var(--ink);
+  .ro-start-ctl b{
+    width:25px; flex:none; text-align:center;
+    font-size:13px; font-weight:700; font-variant-numeric:tabular-nums;
   }
-  input[type=range]::-moz-range-track{
-    height:6px; background:var(--paper); border:2px solid var(--ink);
+  .ro-start-ctl button{
+    flex:none; width:20px; height:20px; border:2px solid var(--ink);
+    background:var(--paper); color:var(--ink); font-family:inherit;
+    font-weight:800; font-size:12px; line-height:1; cursor:pointer; padding:0;
   }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; appearance:none;
-    width:22px; height:22px; margin-top:-10px;
-    background:var(--bright-yellow); border:2px solid var(--ink);
-  }
-  input[type=range]::-moz-range-thumb{
-    width:18px; height:18px; border-radius:0;
-    background:var(--bright-yellow); border:2px solid var(--ink);
-  }
+  .ro-start-ctl button:active{ background:var(--ink); color:var(--paper); }
+  .ro-start-ctl button:disabled{ opacity:.35; cursor:default; }
 
   /* ============ CTA / CONTROLS ============ */
   .btn-row{ display:flex; gap:10px; margin-bottom:10px; }
@@ -382,7 +426,8 @@
   }
   :root[data-view="desktop"] .btn-row,
   :root[data-view="desktop"] .readout,
-  :root[data-view="desktop"] .slider-row,
+  :root[data-view="desktop"] .axis-note,
+  :root[data-view="desktop"] .compare-row,
   :root[data-view="desktop"] .seg-row,
   :root[data-view="desktop"] .scenario-row,
   :root[data-view="desktop"] .dev-panel,
@@ -454,18 +499,17 @@
     </div>
 
     <div class="section-label with-help">
-      <span>N&auml;gel bearbeiten &mdash; tippe in das helle Dreieck</span>
+      <span>N&auml;gel bearbeiten &mdash; tippen setzt oder entfernt</span>
       <button type="button" class="info-dot" data-help="nail-help-text" aria-expanded="false" aria-controls="nail-help-text" aria-label="Erkl&auml;rung anzeigen">?</button>
     </div>
     <div class="help-pop" id="nail-help-text" hidden>
+      <p>Tippe auf eine <b>leere Stelle</b> im hellen Dreieck, um dort einen Nagel zu setzen. Tippe auf einen <b>vorhandenen Nagel</b>, um ihn wieder zu entfernen &mdash; ein und dieselbe Geste, kein Umschalten n&ouml;tig.</p>
       <p>Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden.</p>
-      <p>Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel. So ein eingekeilter Nagel steht schr&auml;g im Weg: Jede Kugel, die ihn erreicht, prallt an ihm ab und wird eine Spalte nach au&szlig;en geworfen. Schon vier solche N&auml;gel verschieben den ganzen Berg sichtbar.</p>
+      <p>Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel (dort erscheint ein feiner Punkt als Platzhalter). So ein eingekeilter Nagel steht schr&auml;g im Weg: Jede Kugel, die ihn erreicht, prallt an ihm ab und wird eine Spalte nach au&szlig;en geworfen. Schon vier solche N&auml;gel verschieben den ganzen Berg sichtbar.</p>
       <p>Nur im hellen Dreieck kommen &uuml;berhaupt Kugeln vorbei &mdash; nur dort wirken N&auml;gel.</p>
       <p><b>Alle N&auml;gel entfernen</b> leert das ganze Brett auf einen Schlag &mdash; der Berg bleibt liegen, nur trifft jede weitere Kugel auf keinen einzigen Nagel mehr.</p>
     </div>
     <div class="seg-row" id="tool-row">
-      <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen</button>
-      <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen</button>
       <button class="seg-btn tool-wipe" id="tool-wipe" type="button">Alle entfernen</button>
     </div>
 
@@ -474,14 +518,28 @@
         <canvas id="board-canvas"></canvas>
         <canvas id="ball-canvas"></canvas>
         <div class="stage-hint-badge attn" id="stage-hint">Tippe ins Brett, um N&auml;gel zu setzen oder zu entfernen</div>
+        <div class="bin-tooltip" id="bin-tooltip" hidden></div>
+      </div>
+      <div class="zoom-ctl">
+        <button type="button" id="zoom-out" aria-label="Brett verkleinern">&minus;</button>
+        <button type="button" id="zoom-reset" aria-label="Zoom zur&uuml;cksetzen" hidden>1&times;</button>
+        <button type="button" id="zoom-in" aria-label="Brett vergr&ouml;&szlig;ern, zum genauen Platzieren">&plus;</button>
       </div>
     </div>
+    <div class="axis-note">S&auml;ulenh&ouml;he relativ zur h&ouml;chsten S&auml;ule, nicht absolut &mdash; tippe oder fahre &uuml;ber eine S&auml;ule f&uuml;r die genaue Zahl. Rote gestrichelte Linien: ab hier gilt ein Ergebnis als <b>extrem</b>.</div>
 
-    <div class="slider-row">
-      <div class="slider-head">
-        <span>Kugeln pro Start</span><b id="ball-count-label">365</b>
-      </div>
-      <input type="range" id="ball-count" min="5" max="365" step="5" value="365" />
+    <div class="section-label with-help compare-label">
+      <span>Vergleichslinien</span>
+      <button type="button" class="info-dot" data-help="compare-help" aria-expanded="false" aria-controls="compare-help" aria-label="Vergleichslinien erkl&auml;ren">?</button>
+    </div>
+    <div class="help-pop" id="compare-help" hidden>
+      <p>Tippe auf eine leere Kachel, um die aktuelle Verteilung dort als gestrichelte Linie einzufrieren. Tippe auf eine belegte Kachel, um sie wieder zu l&ouml;schen.</p>
+      <p>So lassen sich bis zu drei Experimente &uuml;bereinander vergleichen &mdash; auch &uuml;ber einen Reset oder Szenariowechsel hinweg.</p>
+    </div>
+    <div class="compare-row" id="compare-row">
+      <button type="button" class="compare-chip" data-slot="0"><span class="compare-num">1</span></button>
+      <button type="button" class="compare-chip" data-slot="1"><span class="compare-num">2</span></button>
+      <button type="button" class="compare-chip" data-slot="2"><span class="compare-num">3</span></button>
     </div>
 
     <div class="readout" id="readout">
@@ -489,6 +547,14 @@
       <div>Mittelwert<b id="ro-mean">&mdash;</b></div>
       <div>Streuung<b id="ro-sd">&mdash;</b></div>
       <div>Extreme<b id="ro-extreme">0 %</b></div>
+      <div class="ro-start">
+        <span>Start</span>
+        <div class="ro-start-ctl">
+          <button type="button" id="count-down" aria-label="Weniger Kugeln pro Start">&minus;</button>
+          <b id="ball-count-label">365</b>
+          <button type="button" id="count-up" aria-label="Mehr Kugeln pro Start">&plus;</button>
+        </div>
+      </div>
     </div>
 
     <div class="btn-row">
@@ -531,20 +597,14 @@
       </div>
       <div class="dev-row">
         <button type="button" id="dev-clear-balls">Kugeln zur&uuml;cksetzen</button>
-        <button type="button" id="dev-compare">Vergleichslinie speichern</button>
       </div>
-
-      <div class="dev-slider-row">
-        <div class="dev-slider-head"><span>Kugel-Abstand (Start/Einzeln)</span><b id="dev-pacing-label">90&nbsp;ms</b></div>
-        <input type="range" id="dev-pacing" min="0" max="300" step="10" value="90" />
-      </div>
-      <div class="dev-slider-row">
-        <div class="dev-slider-head"><span>Nagel-Gr&ouml;&szlig;e</span><b id="dev-pinsize-label">100&nbsp;%</b></div>
-        <input type="range" id="dev-pinsize" min="50" max="300" step="10" value="100" />
+      <div class="dev-row">
+        <button type="button" id="dev-theory">Theorie-Kurve: aus</button>
+        <button type="button" id="dev-export">CSV exportieren</button>
       </div>
 
       <div class="dev-stats" id="dev-stats">&mdash;</div>
-      <div class="dev-note">Kugeln werden zugegeben, nicht ersetzt. Zeitraffer rechnet mehrere Simulationsschritte pro Bild &mdash; die Statistik bleibt identisch, nur die Wartezeit schrumpft. Kugel-Abstand wirkt nur auf Start/Einzeln (0&nbsp;ms = automatisch) und nur, solange der Dev-Modus offen ist; die +1000/+5000-Sch&uuml;be bleiben davon unber&uuml;hrt. Nagel-Gr&ouml;&szlig;e ist rein optisch.</div>
+      <div class="dev-note">Kugeln werden zugegeben, nicht ersetzt. Zeitraffer rechnet mehrere Simulationsschritte pro Bild &mdash; die Statistik bleibt identisch, nur die Wartezeit schrumpft. Theorie-Kurve rechnet die exakte Wahrscheinlichkeitsverteilung f&uuml;r das aktuelle Nagelbild aus (dieselbe Fallunterscheidung wie die Simulation, nur ohne Zufall) und zeigt sie gepunktet &mdash; ein guter Vergleich, ob echte L&auml;ufe zur Theorie passen.</div>
     </div>
 
     <div class="explainer">
@@ -697,9 +757,13 @@
   // y of a level: even levels sit on the row, odd ones halfway to the next.
   function levelY(q) { return TOP_Y + (q / 2) * ROW_DY; }
 
+  // The buffer past the last row's own reach (+1 for the everyday wedge
+  // slots, +2 more on top of that for dev mode's further-out experimental
+  // ones) has to fit in the array on both sides, hence +4 here rather
+  // than the +1 a purely non-dev board would need.
   function buildLattice() {
-    HOFF = ROWS + 2;
-    HSPAN = 2 * (ROWS + 2) + 1;
+    HOFF = ROWS + 4;
+    HSPAN = 2 * (ROWS + 4) + 1;
     pinPos = [];
     for (var q = 0; q < LEVELS; q++) {
       var rowPos = [];
@@ -717,10 +781,14 @@
     return (q % 2 === 0) ? (q / 2) : ((q - 1) / 2 + 1);
   }
 
+  // r+1 is reachable by any ball that has already been thrown outward once.
+  // Dev mode opens two more columns beyond that, for experimenting with
+  // configurations no ordinary chain of deflections would ever reach.
   function slotUsable(q, j) {
     var h = j - HOFF;
     var r = levelReach(q);
-    return (((h - r) % 2) + 2) % 2 === 0 && Math.abs(h) <= r + 1;
+    var maxH = r + 1 + (devOn ? 2 : 0);
+    return (((h - r) % 2) + 2) % 2 === 0 && Math.abs(h) <= maxH;
   }
 
   // The board's own nails: the classic triangle on the even levels.
@@ -824,11 +892,78 @@
     return Math.max(0, Math.min(BINS - 1, Math.floor((x - EDGES[0]) / BIN_W)));
   }
 
+  // ============ THEORY (dev-only) ============
+  // The exact probability distribution for the current pin layout, worked
+  // out by dynamic programming instead of dropped balls: a state is a
+  // (half-column, direction) pair, and each level updates every state's
+  // probability with precisely the same branching stepBall uses -- a fair
+  // coin at an on-row nail, a deterministic push at a wedge nail, a hole
+  // that keeps the ball going the way it was already headed. Doing this in
+  // full only takes a few hundred additions over the 24 levels, so it is
+  // cheap enough to recompute on every redraw while the toggle is on and
+  // always be current with whatever nails are on the board right now.
+  function computeTheory() {
+    var dist = { '0:0': 1 };
+    for (var q = 0; q < LEVELS; q++) {
+      var next = {};
+      for (var key in dist) {
+        var p = dist[key];
+        var sep = key.indexOf(':');
+        var h = parseInt(key.slice(0, sep), 10);
+        var dir = parseInt(key.slice(sep + 1), 10);
+        var nail = pinAt(q, h);
+        var outcomes;
+        if (nail && q % 2 === 0) {
+          outcomes = [[h - 1, -1, 0.5], [h + 1, 1, 0.5]];
+        } else if (nail) {
+          var d = h > 0 ? 1 : (h < 0 ? -1 : 0);
+          outcomes = d === 0
+            ? [[h - 2, -1, 0.5], [h + 2, 1, 0.5]]
+            : [[h + 2 * d, d, 1]];
+        } else if (q % 2 === 0) {
+          outcomes = [[h + dir, dir, 1]];
+        } else {
+          outcomes = [[h, dir, 1]];
+        }
+        for (var oi = 0; oi < outcomes.length; oi++) {
+          var k2 = outcomes[oi][0] + ':' + outcomes[oi][1];
+          next[k2] = (next[k2] || 0) + p * outcomes[oi][2];
+        }
+      }
+      dist = next;
+    }
+    // A ball that ends up between two columns settles into one of them by
+    // a fair coin, exactly like stepBall's own settling rule.
+    var out = new Array(BINS).fill(0);
+    for (var key3 in dist) {
+      var h3 = parseInt(key3.slice(0, key3.indexOf(':')), 10);
+      var p3 = dist[key3];
+      if (((h3 % 2) + 2) % 2 !== 0) {
+        out[binIndex(halfX(0, h3 - 1))] += p3 * 0.5;
+        out[binIndex(halfX(0, h3 + 1))] += p3 * 0.5;
+      } else {
+        out[binIndex(halfX(0, h3))] += p3;
+      }
+    }
+    // Scaled to a large, fixed total: this is the asymptotic shape the
+    // math predicts, not a forecast for however many balls happen to be
+    // on the board right now, so it should not visually shrink or jump
+    // around as the real run's own ball count changes.
+    for (var bi = 0; bi < BINS; bi++) out[bi] *= 100000;
+    return out;
+  }
+
   var bins = new Array(BINS).fill(0);
   var settled = 0;       // how many balls the bins hold, for the readout
   // The bins are the whole sample: mean, spread and extremes are read back
   // out of thirteen counters rather than out of a list with one entry per
   // ball, so topping the board up to several thousand balls costs nothing.
+
+  // Up to three frozen snapshots of earlier bin counts (each a copy, so it
+  // does not drift as the live bins keep filling), for comparing one
+  // experiment against the next. Survives a reset or a scenario switch --
+  // that is the entire point of keeping it around.
+  var savedCurves = [null, null, null];
 
   // ============ BALLS ============
   var balls = [];        // live balls in flight
@@ -842,8 +977,10 @@
 
   // The mouth the feed drops from. Every ball is still aimed at the apex,
   // so widening the mouth only changes what the queue looks like on its way
-  // down -- never which slot the ball enters the board on.
-  var FEED_W = 0.10;        // how wide the stream is scattered
+  // down -- never which slot the ball enters the board on. Wider also means
+  // fewer balls overlapping right at spawn, which is where contact used to
+  // be at its most crowded and so its most visibly jumpy.
+  var FEED_W = 0.14;        // how wide the stream is scattered
   var FEED_TOP = 0.030;     // topmost spawn height, inside the funnel
   var FEED_H = 0.030;       // vertical scatter of the spawn height
   var FIRST_Y = TOP_Y - PIN_R - BALL_R;   // where the apex nail is met
@@ -1016,9 +1153,18 @@
   // the work grows with the number of balls rather than with its square:
   // several thousand balls in flight still fit comfortably in a frame.
   var ballCollisions = true;
-  var COLL_STIFF = 0.5;      // share of the overlap taken out per iteration
-  var COLL_BOUNCE = 0.25;    // share of the closing speed given back
-  var COLL_ITERS = 2;
+  // Gentler and interleaved beats strong and lumped: resolveCollisions()
+  // now runs once per substep (twice a frame) rather than once after both,
+  // so positions are re-integrated between correction passes instead of
+  // piling the whole frame's worth of drift onto a single, larger fix.
+  // COLL_ITERS dropped from 2 to 1 to match -- the total correction budget
+  // per frame (passes x iters) is unchanged, only its rhythm is smoother.
+  // COLL_STIFF and COLL_BOUNCE both came down too, trading a touch of
+  // "instant" separation for calmer, less springy-looking contact.
+  var COLL_STIFF = 0.35;     // share of the overlap taken out per iteration
+  var COLL_BOUNCE = 0.12;    // share of the closing speed given back
+  var COLL_ITERS = 1;
+  var COLL_DAMP = 0.985;     // per-substep bleed-off of sideways jitter
   var VX_MAX = 0.5, VY_MIN = -0.4;
 
   // The stage is taller than it is wide and radii are a fraction of its
@@ -1131,10 +1277,13 @@
       }
     }
 
-    // A shove must never throw a ball off the board or send it flying.
+    // A shove must never throw a ball off the board or send it flying, and
+    // a light sideways damping bleeds off the small jitter that repeated
+    // contact in a crowd builds up, instead of letting it accumulate.
     for (i = 0; i < n; i++) {
       b = balls[i];
       if (b.x < BALL_R) b.x = BALL_R; else if (b.x > 1 - BALL_R) b.x = 1 - BALL_R;
+      b.vx *= COLL_DAMP;
       if (b.vx > VX_MAX) b.vx = VX_MAX; else if (b.vx < -VX_MAX) b.vx = -VX_MAX;
       if (b.vy < VY_MIN) b.vy = VY_MIN;
     }
@@ -1215,9 +1364,7 @@
     // visitor put it there: they behave identically, so they should read
     // identically. A slot without a nail is simply blank -- a hole, drawn
     // as nothing, because that is exactly what the ball meets there.
-    // Dev mode can draw them larger for a demo; it never changes where a
-    // ball actually bounces, only how visible the pin is.
-    var pr = radiusPx(PIN_R) * (devOn ? devPinScale : 1);
+    var pr = radiusPx(PIN_R);
     boardCtx.fillStyle = INK;
     for (var q = 0; q < LEVELS; q++) {
       for (var j = 0; j < HSPAN; j++) {
@@ -1229,6 +1376,32 @@
       }
     }
 
+    // --- ghost markers for the empty in-between (diagonal) slots ---
+    // Default, on-row slots are easy to spot even empty: they're simply a
+    // missing dot in the otherwise-familiar triangle. The in-between slots
+    // have no such pattern to lean on, so an empty but usable one gets a
+    // faint placeholder -- solid for the ones every visitor can tap, and
+    // (only while dev mode is open) a dashed, redder one further out for
+    // the experimental positions no ordinary ball would ever reach.
+    boardCtx.lineWidth = 1;
+    for (var gq = 1; gq < LEVELS; gq += 2) {
+      var gr = levelReach(gq);
+      for (var gj = 0; gj < HSPAN; gj++) {
+        if (pins[gq][gj]) continue;
+        if (!slotUsable(gq, gj)) continue;
+        var gh = gj - HOFF;
+        var extended = Math.abs(gh) > gr + 1;
+        if (extended && !devOn) continue;
+        var gp = pinPos[gq][gj];
+        boardCtx.strokeStyle = extended ? 'rgba(223,42,30,.5)' : 'rgba(17,17,17,.28)';
+        boardCtx.setLineDash(extended ? [2, 2] : []);
+        boardCtx.beginPath();
+        boardCtx.arc(gp.x * W, gp.y * H, pr * 0.6, 0, Math.PI * 2);
+        boardCtx.stroke();
+      }
+    }
+    boardCtx.setLineDash([]);
+
     // --- bin walls ---
     boardCtx.strokeStyle = INK;
     boardCtx.lineWidth = 2;
@@ -1239,6 +1412,22 @@
       boardCtx.lineTo(x, H);
     }
     boardCtx.stroke();
+
+    // --- extreme-threshold markers ---
+    // "Extreme" is defined as the outer two bins on each side (see
+    // statsFromBins); these dashed lines mark exactly where that begins,
+    // so the readout's percentage has something to point at on the board.
+    boardCtx.strokeStyle = 'rgba(223,42,30,.65)';
+    boardCtx.lineWidth = 2;
+    boardCtx.setLineDash([4, 4]);
+    [2, BINS - 2].forEach(function (edgeIdx) {
+      var ex = EDGES[edgeIdx] * W;
+      boardCtx.beginPath();
+      boardCtx.moveTo(ex, BIN_TOP * H);
+      boardCtx.lineTo(ex, H);
+      boardCtx.stroke();
+    });
+    boardCtx.setLineDash([]);
 
     // --- floor ---
     boardCtx.beginPath();
@@ -1338,12 +1527,17 @@
     if (dash && dash.length) ballCtx.setLineDash([]);
   }
 
-  // The emerging "climate" (solid), plus a dev-mode snapshot of an earlier
-  // run (dashed) kept around so two experiments can be held up against
-  // each other on the same board.
+  // The emerging "climate" (solid), plus up to three saved snapshots of
+  // earlier runs (dashed, one colour per slot) kept around so several
+  // experiments can be held up against each other on the same board.
+  var COMPARE_COLORS = ['#c65a2a', '#4a2e83', '#1093c4'];
+
   function drawCurve() {
     strokeCurve(bins, '#28348f', 3);
-    if (devOn && savedCurve) strokeCurve(savedCurve, '#c65a2a', 2.5, [7, 6]);
+    for (var s = 0; s < savedCurves.length; s++) {
+      if (savedCurves[s]) strokeCurve(savedCurves[s], COMPARE_COLORS[s], 2.5, [7, 6]);
+    }
+    if (devOn && devTheory) strokeCurve(computeTheory(), '#00954f', 2, [1, 5]);
   }
 
   // ============ STATISTICS ============
@@ -1400,22 +1594,22 @@
   var primaryIcon = document.getElementById('sim-primary-icon');
   var singleBtn = document.getElementById('sim-single');
   var resetBtn = document.getElementById('sim-reset');
-  var countSlider = document.getElementById('ball-count');
   var countLabel = document.getElementById('ball-count-label');
-  var toolAddBtn = document.getElementById('tool-add');
-  var toolRemoveBtn = document.getElementById('tool-remove');
+  var countDownBtn = document.getElementById('count-down');
+  var countUpBtn = document.getElementById('count-up');
   var toolWipeBtn = document.getElementById('tool-wipe');
   var devPanel = document.getElementById('dev-panel');
   var devStats = document.getElementById('dev-stats');
   var devSpeedBtn = document.getElementById('dev-speed');
   var devCollideBtn = document.getElementById('dev-collide');
-  var devCompareBtn = document.getElementById('dev-compare');
-  var devPacingSlider = document.getElementById('dev-pacing');
-  var devPacingLabel = document.getElementById('dev-pacing-label');
-  var devPinSlider = document.getElementById('dev-pinsize');
-  var devPinLabel = document.getElementById('dev-pinsize-label');
   var devToggleLink = document.getElementById('dev-toggle');
   var scenarioRow = document.getElementById('scenario-row');
+  var compareRow = document.getElementById('compare-row');
+  var stageCard = document.querySelector('.stage-card');
+  var binTooltip = document.getElementById('bin-tooltip');
+  var zoomInBtn = document.getElementById('zoom-in');
+  var zoomOutBtn = document.getElementById('zoom-out');
+  var zoomResetBtn = document.getElementById('zoom-reset');
   var hint = document.getElementById('hint');
 
   var ICON_PLAY = '<path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/>';
@@ -1424,7 +1618,6 @@
   // ============ STATE MACHINE ============
   var IDLE = 'idle', RUNNING = 'running', PAUSED = 'paused', DONE = 'done';
   var mode = IDLE;
-  var tool = 'add';
   var interacted = false;
 
   function setMode(m) {
@@ -1451,10 +1644,13 @@
   }
 
   // ============ PIN EDITING ============
+  // getBoundingClientRect() already reports the stage's on-screen size and
+  // position *after* whatever CSS transform the zoom/pan below applies to
+  // it, so this fraction-of-the-box math keeps working unchanged at any
+  // zoom level or pan offset -- nothing here needs to know zoom exists.
   function localPoint(ev) {
     var rect = stage.getBoundingClientRect();
-    var src = (ev.touches && ev.touches[0]) || (ev.changedTouches && ev.changedTouches[0]) || ev;
-    return { x: (src.clientX - rect.left) / rect.width, y: (src.clientY - rect.top) / rect.height };
+    return { x: (ev.clientX - rect.left) / rect.width, y: (ev.clientY - rect.top) / rect.height };
   }
 
   // Nearest lattice slot within a generous touch radius — fingers are
@@ -1477,16 +1673,14 @@
     return bestD <= touchR ? best : null;
   }
 
-  function onStageTap(ev) {
-    var pt = localPoint(ev);
+  // A tap toggles whatever is there: an empty usable slot gets a nail, an
+  // existing nail is removed. One gesture instead of a separate add/remove
+  // mode to switch between first.
+  function onStageTap(pt) {
     var slot = hitSlot(pt);
     if (!slot) return;
-    ev.preventDefault();
 
-    var has = pins[slot.r][slot.j];
-    if (tool === 'add' && has) return;
-    if (tool === 'remove' && !has) return;
-    pins[slot.r][slot.j] = (tool === 'add');
+    pins[slot.r][slot.j] = !pins[slot.r][slot.j];
 
     // The heap is deliberately kept: editing the board while balls keep
     // arriving is how a visitor sees the distribution bend towards the new
@@ -1498,31 +1692,199 @@
     updateHint();
   }
 
-  // Handle the tap on touchstart for responsiveness, and swallow the
-  // synthetic click that follows it, which would otherwise toggle the same
-  // slot a second time and undo the edit.
-  var lastTouchTap = 0;
-
-  stage.addEventListener('touchstart', function (ev) {
-    lastTouchTap = Date.now();
-    onStageTap(ev);
-  }, { passive: false });
-  stage.addEventListener('click', function (ev) {
-    if (Date.now() - lastTouchTap < 700) return;
-    onStageTap(ev);
-  });
-
   function updateHint() {
     hint.textContent = 'Nägel im Brett: ' + countPins() +
       ' — ein einzelner Wurf sagt nichts, erst viele Kugeln zeigen das Klima.';
   }
 
-  // ============ TOOL / SCENARIO CONTROLS ============
-  function setTool(t) {
-    tool = t;
-    toolAddBtn.classList.toggle('active', t === 'add');
-    toolRemoveBtn.classList.toggle('active', t === 'remove');
+  // ============ BIN TOOLTIP ============
+  // Hovering (mouse) or touching a histogram column shows exactly how many
+  // balls landed there -- the one number the bars' relative heights alone
+  // cannot give away.
+  var tooltipHideT = null;
+  var lastHoverPt = null;
+
+  function updateBinTooltip(pt) {
+    lastHoverPt = pt;
+    if (!pt || pt.y < BIN_TOP || pt.x < 0 || pt.x > 1) { hideBinTooltip(); return; }
+    var bi = binIndex(pt.x);
+    var n = bins[bi];
+    if (!n) { hideBinTooltip(); return; }
+    if (tooltipHideT) { clearTimeout(tooltipHideT); tooltipHideT = null; }
+    var cx = (EDGES[bi] + EDGES[bi + 1]) / 2;
+    binTooltip.textContent = n + (n === 1 ? ' Kugel' : ' Kugeln');
+    binTooltip.style.left = (cx * 100) + '%';
+    binTooltip.style.top = (heapTop(bi) * 100) + '%';
+    binTooltip.hidden = false;
   }
+
+  function hideBinTooltip() {
+    lastHoverPt = null;
+    binTooltip.hidden = true;
+  }
+
+  function scheduleHideTooltip() {
+    if (tooltipHideT) clearTimeout(tooltipHideT);
+    tooltipHideT = setTimeout(hideBinTooltip, 1400);
+  }
+
+  // ============ ZOOM / PAN ============
+  // A visual aid for placing a nail precisely: the board never moves in
+  // unit space, only how much of it is shown. Implemented as a CSS
+  // transform on .stage itself -- getBoundingClientRect() already reports
+  // the transformed size (see localPoint above), so every hit test below
+  // keeps working with no inverse-transform math of its own, and the
+  // canvases resize to the zoomed-in resolution (via layout()) so the
+  // result stays crisp rather than a stretched blur.
+  var ZOOM_MIN = 1, ZOOM_MAX = 3.5;
+  var zoom = 1, panX = 0, panY = 0;
+
+  function clampPan() {
+    var outer = stageCard.getBoundingClientRect();
+    var maxPanX = Math.max(0, (zoom - 1) * outer.width / 2);
+    var maxPanY = Math.max(0, (zoom - 1) * outer.height / 2);
+    if (panX > maxPanX) panX = maxPanX; else if (panX < -maxPanX) panX = -maxPanX;
+    if (panY > maxPanY) panY = maxPanY; else if (panY < -maxPanY) panY = -maxPanY;
+  }
+
+  function applyZoomTransform() {
+    stage.style.transform = zoom === 1 ? '' :
+      ('translate(' + panX.toFixed(1) + 'px,' + panY.toFixed(1) + 'px) scale(' + zoom.toFixed(3) + ')');
+  }
+
+  function updateZoomUI() {
+    zoomOutBtn.disabled = zoom <= ZOOM_MIN + 0.01;
+    zoomInBtn.disabled = zoom >= ZOOM_MAX - 0.01;
+    zoomResetBtn.hidden = zoom <= 1.01;
+  }
+
+  // The heavier step: resizes the canvas backing buffers to match the new
+  // on-screen (zoomed) size and redraws. Skipped on every pointermove of a
+  // pinch or drag -- applyZoomTransform() alone keeps that smooth -- and
+  // only run once the gesture settles, so resizing a canvas mid-gesture
+  // never fights the frame that is drawing to it.
+  function finishZoomChange() {
+    clampPan();
+    applyZoomTransform();
+    layout();
+    drawBoard();
+    drawBalls();
+    updateZoomUI();
+  }
+
+  function setZoom(z) {
+    zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    if (zoom <= 1.001) { zoom = 1; panX = 0; panY = 0; }
+    finishZoomChange();
+  }
+
+  zoomInBtn.addEventListener('click', function () { setZoom(zoom * 1.6); });
+  zoomOutBtn.addEventListener('click', function () { setZoom(zoom / 1.6); });
+  zoomResetBtn.addEventListener('click', function () { setZoom(1); });
+
+  stage.addEventListener('wheel', function (ev) {
+    ev.preventDefault();
+    setZoom(zoom * (ev.deltaY < 0 ? 1.12 : 1 / 1.12));
+  }, { passive: false });
+
+  // ============ POINTER HANDLING ============
+  // One gesture model covers three different things depending on where it
+  // starts and how far it moves: a still tap on the triangle toggles a
+  // nail, a still tap or a drag over the bins shows their tooltip, and
+  // once zoomed in, a drag anywhere pans instead of editing. A movement
+  // threshold is what tells a tap from the start of a drag; pinch (two
+  // pointers) always means zoom, in preference to either.
+  var activePointers = {};
+  var singleGesture = null;
+  var pinchGesture = null;
+  var MOVE_THRESHOLD = 6;
+
+  function pointerCount() { return Object.keys(activePointers).length; }
+
+  stage.addEventListener('pointerdown', function (ev) {
+    try { stage.setPointerCapture(ev.pointerId); } catch (e) {}
+    activePointers[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+
+    if (pointerCount() === 2) {
+      singleGesture = null;
+      var ids = Object.keys(activePointers);
+      var p1 = activePointers[ids[0]], p2 = activePointers[ids[1]];
+      pinchGesture = {
+        dist0: Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1,
+        zoom0: zoom, panX0: panX, panY0: panY,
+        midX0: (p1.x + p2.x) / 2, midY0: (p1.y + p2.y) / 2
+      };
+      hideBinTooltip();
+    } else if (pointerCount() === 1) {
+      var pt = localPoint(ev);
+      singleGesture = {
+        id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, moved: false,
+        panX0: panX, panY0: panY, ptUnit0: pt
+      };
+      updateBinTooltip(pt);
+    }
+  });
+
+  stage.addEventListener('pointermove', function (ev) {
+    if (activePointers[ev.pointerId]) activePointers[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+
+    if (pinchGesture && pointerCount() >= 2) {
+      var ids = Object.keys(activePointers);
+      var p1 = activePointers[ids[0]], p2 = activePointers[ids[1]];
+      var d = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+      zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, pinchGesture.zoom0 * (d / pinchGesture.dist0)));
+      var midX = (p1.x + p2.x) / 2, midY = (p1.y + p2.y) / 2;
+      panX = pinchGesture.panX0 + (midX - pinchGesture.midX0);
+      panY = pinchGesture.panY0 + (midY - pinchGesture.midY0);
+      clampPan();
+      applyZoomTransform();
+      return;
+    }
+
+    if (singleGesture && singleGesture.id === ev.pointerId) {
+      var dx = ev.clientX - singleGesture.x0, dy = ev.clientY - singleGesture.y0;
+      if (!singleGesture.moved && Math.hypot(dx, dy) > MOVE_THRESHOLD) singleGesture.moved = true;
+      if (singleGesture.moved && zoom > 1.02) {
+        panX = singleGesture.panX0 + dx;
+        panY = singleGesture.panY0 + dy;
+        clampPan();
+        applyZoomTransform();
+        hideBinTooltip();
+        return;
+      }
+    }
+
+    // Not panning or pinching: a plain hover (mouse) or a finger dragged
+    // along the bins (touch) -- either way, keep the tooltip in step.
+    updateBinTooltip(localPoint(ev));
+  });
+
+  stage.addEventListener('pointerup', function (ev) {
+    delete activePointers[ev.pointerId];
+
+    if (pinchGesture) {
+      if (pointerCount() < 2) { pinchGesture = null; finishZoomChange(); }
+      return;
+    }
+
+    if (singleGesture && singleGesture.id === ev.pointerId) {
+      if (!singleGesture.moved) onStageTap(singleGesture.ptUnit0);
+      singleGesture = null;
+    }
+    scheduleHideTooltip();
+  });
+
+  stage.addEventListener('pointercancel', function (ev) {
+    delete activePointers[ev.pointerId];
+    if (singleGesture && singleGesture.id === ev.pointerId) singleGesture = null;
+    if (pointerCount() < 2) pinchGesture = null;
+  });
+
+  stage.addEventListener('pointerleave', function (ev) {
+    if (pointerCount() === 0) scheduleHideTooltip();
+  });
+
+  // ============ TOOL / SCENARIO CONTROLS ============
   // Every '?' works the same way: it shows the panel named in data-help.
   Array.prototype.forEach.call(document.querySelectorAll('.info-dot'), function (btn) {
     var panel = document.getElementById(btn.getAttribute('data-help'));
@@ -1534,15 +1896,11 @@
     });
   });
 
-  toolAddBtn.addEventListener('click', function () { setTool('add'); });
-  toolRemoveBtn.addEventListener('click', function () { setTool('remove'); });
-
   // Clearing the board is a hand edit like any other, only faster, so it
   // keeps the heap: the whole point is to watch the pile bend towards the
   // new layout. Reset is there for a clean slate.
   toolWipeBtn.addEventListener('click', function () {
     pins = emptyPins();
-    setTool('add');
     dismissHint();
     markCustomScenario();
     drawBoard();
@@ -1578,12 +1936,67 @@
     });
   });
 
+  // ============ BALL COUNT ============
+  // How many balls the next Start queues up. A pair of small +/- buttons
+  // rather than the full-width drag slider this used to be: the slider
+  // sat exactly where a thumb scrolling the page swept past, and kept
+  // getting bumped by accident on the way down to the explainer text.
+  var BALL_COUNT_MIN = 5, BALL_COUNT_MAX = 365, BALL_COUNT_STEP = 5;
+  var ballCount = 365;
+
   function updateCountLabel() {
-    var n = parseInt(countSlider.value, 10);
-    countLabel.textContent = n;
+    countLabel.textContent = ballCount;
+    countDownBtn.disabled = ballCount <= BALL_COUNT_MIN;
+    countUpBtn.disabled = ballCount >= BALL_COUNT_MAX;
   }
 
-  countSlider.addEventListener('input', updateCountLabel);
+  function stepBallCount(dir) {
+    ballCount = Math.max(BALL_COUNT_MIN, Math.min(BALL_COUNT_MAX, ballCount + dir * BALL_COUNT_STEP));
+    updateCountLabel();
+  }
+
+  // Press-and-hold repeats the step, so reaching either end of the range
+  // does not take seventy-odd individual taps.
+  function holdToRepeat(btn, fn) {
+    var t = null;
+    function stop() { if (t) { clearInterval(t); clearTimeout(t); t = null; } }
+    btn.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      fn();
+      t = setTimeout(function () { t = setInterval(fn, 90); }, 420);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (t2) {
+      btn.addEventListener(t2, stop);
+    });
+  }
+
+  holdToRepeat(countDownBtn, function () { stepBallCount(-1); });
+  holdToRepeat(countUpBtn, function () { stepBallCount(1); });
+
+  // ============ COMPARISON LINES ============
+  var compareChips = Array.prototype.slice.call(compareRow.querySelectorAll('.compare-chip'));
+
+  function updateCompareChips() {
+    compareChips.forEach(function (chip) {
+      var slot = parseInt(chip.getAttribute('data-slot'), 10);
+      chip.classList.toggle('filled', !!savedCurves[slot]);
+    });
+  }
+
+  compareChips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      var slot = parseInt(chip.getAttribute('data-slot'), 10);
+      if (savedCurves[slot]) {
+        savedCurves[slot] = null;
+      } else {
+        // A copy: the live bins keep filling after this, and must not
+        // drag the saved snapshot along with them.
+        savedCurves[slot] = bins.slice();
+      }
+      updateCompareChips();
+      drawBalls();
+    });
+  });
 
   // ============ DEV MODE ============
   // Not part of the exhibit: a hidden panel for trying out scenarios and
@@ -1592,19 +2005,9 @@
   // remembered afterwards so a phone does not have to retype the URL.
   var devOn = false;
   var timeScale = 1;
+  var devTheory = false;
   var SPEEDS = [1, 2, 4, 8];
   var DEV_KEY = 'scapeDevMode';
-  // A visual-only enlargement of the drawn nails -- it never touches PIN_R
-  // itself, so it cannot change where or when a ball actually bounces.
-  var devPinScale = 1;
-  // Milliseconds between balls for Start/Einzeln while dev mode is open;
-  // 0 leaves the exhibit's own automatic pacing alone. The +1000/+5000
-  // stress-test buttons always use the automatic pacing regardless of this
-  // -- they are for loading the board fast, not for testing the drop feel.
-  var devPacing = 90;
-  // A snapshot of a previous run's bin counts, drawn as a dashed curve
-  // alongside the live one so two experiments can be compared.
-  var savedCurve = null;
 
   function devWanted() {
     if (/(?:^|[?&#])dev(?:=1)?(?:$|[&#])/.test(location.search + location.hash)) return true;
@@ -1621,7 +2024,7 @@
     } else {
       updateDevStats();
     }
-    // Nail size and the comparison line are dev-only; leaving the panel
+    // The extended, experimental nail slots are dev-only; leaving the panel
     // must put the board straight back to what every other visitor sees.
     drawBoard();
     drawBalls();
@@ -1654,6 +2057,16 @@
       updateDevStats();
     });
 
+    var devTheoryBtn = document.getElementById('dev-theory');
+    devTheoryBtn.addEventListener('click', function () {
+      devTheory = !devTheory;
+      devTheoryBtn.textContent = 'Theorie-Kurve: ' + (devTheory ? 'an' : 'aus');
+      devTheoryBtn.classList.toggle('on', devTheory);
+      drawBalls();
+    });
+
+    document.getElementById('dev-export').addEventListener('click', exportCSV);
+
     devSpeedBtn.addEventListener('click', function () {
       var i = SPEEDS.indexOf(timeScale);
       timeScale = SPEEDS[(i + 1) % SPEEDS.length];
@@ -1664,30 +2077,6 @@
       ballCollisions = !ballCollisions;
       devCollideBtn.textContent = 'Kollisionen: ' + (ballCollisions ? 'an' : 'aus');
       devCollideBtn.classList.toggle('on', ballCollisions);
-    });
-
-    devCompareBtn.addEventListener('click', function () {
-      if (savedCurve) {
-        savedCurve = null;
-        devCompareBtn.textContent = 'Vergleichslinie speichern';
-      } else {
-        // A copy: the live bins keep filling after this, and must not
-        // drag the saved snapshot along with them.
-        savedCurve = bins.slice();
-        devCompareBtn.textContent = 'Vergleichslinie entfernen';
-      }
-      drawBalls();
-    });
-
-    devPacingSlider.addEventListener('input', function () {
-      devPacing = parseInt(devPacingSlider.value, 10);
-      devPacingLabel.textContent = devPacing > 0 ? (devPacing + ' ms') : 'automatisch';
-    });
-
-    devPinSlider.addEventListener('input', function () {
-      devPinScale = parseInt(devPinSlider.value, 10) / 100;
-      devPinLabel.textContent = devPinSlider.value + ' %';
-      drawBoard();
     });
 
     // The small link at the page foot: reachable on a phone, and quiet
@@ -1708,6 +2097,32 @@
     queueBalls(n);
     setMode(RUNNING);
     updateDevStats();
+  }
+
+  // Bin counts and summary stats as a CSV download -- for a teacher who
+  // wants to take a run's numbers into a spreadsheet rather than just
+  // read them off the readout.
+  function exportCSV() {
+    var st = statsFromBins();
+    var lines = ['bin,count'];
+    for (var i = 0; i < BINS; i++) lines.push(i + ',' + bins[i]);
+    lines.push('');
+    lines.push('nails,' + countPins());
+    if (st) {
+      lines.push('n,' + st.n);
+      lines.push('mean,' + st.mean.toFixed(4));
+      lines.push('sd,' + st.sd.toFixed(4));
+      lines.push('extreme_count,' + st.ext);
+    }
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'galton-' + Date.now() + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
   }
 
   // ============ RUN CONTROL ============
@@ -1739,24 +2154,15 @@
     releaseEvery = Math.max(floor, Math.min(0.12, 12 / Math.max(1, n)));
   }
 
-  // A dev-mode override on top of queueBalls' own pacing, for Start and
-  // Einzeln only -- the two controls a visitor actually presses, and so
-  // the only place "how does the drop feel" is worth testing.
-  function applyDevPacing() {
-    if (devOn && devPacing > 0) releaseEvery = devPacing / 1000;
-  }
-
   function startRun() {
     dismissHint();
-    queueBalls(parseInt(countSlider.value, 10));
-    applyDevPacing();
+    queueBalls(ballCount);
     setMode(RUNNING);
   }
 
   function dropSingle() {
     dismissHint();
     queueBalls(1);
-    applyDevPacing();
     releaseTimer = releaseEvery;   // release it immediately
     setMode(RUNNING);
   }
@@ -1811,6 +2217,9 @@
       releaseTimer = 0;
     }
 
+    // Contact is resolved after each substep, not once after both: the
+    // finer rhythm gives positions less room to drift apart before being
+    // corrected, which is what reads as calmer rather than jumpy.
     for (var s = 0; s < SUBSTEPS; s++) {
       for (var i = balls.length - 1; i >= 0; i--) {
         var b = balls[i];
@@ -1821,9 +2230,8 @@
           balls.splice(i, 1);
         }
       }
+      resolveCollisions();
     }
-
-    resolveCollisions();
   }
 
   function frame(ts) {
@@ -1843,6 +2251,9 @@
     drawBalls();
     updateReadout();
     if (devOn) updateDevStats();
+    // A finger or cursor resting over a column while more balls land
+    // would otherwise show a count that is already stale.
+    if (!binTooltip.hidden && lastHoverPt) updateBinTooltip(lastHoverPt);
 
     if (toRelease === 0 && balls.length === 0) setMode(DONE);
   }
@@ -1859,6 +2270,10 @@
   }
 
   function relayout() {
+    // A resize or orientation change can shrink the outer frame the zoomed
+    // view is allowed to pan within, so the clamp is re-checked here too.
+    clampPan();
+    applyZoomTransform();
     layout();
     drawBoard();
     drawBalls();
@@ -1893,9 +2308,9 @@
     setupViewToggle();
     setupDevMode();
     layout();
-    setTool('add');
     setMode(IDLE);
     updateCountLabel();
+    updateCompareChips();
     drawBoard();
     drawBalls();
     updateReadout();
