@@ -197,6 +197,41 @@
   }
   .seg-btn.tool-add.active{ background:var(--green); border-color:var(--green); color:#fff; }
   .seg-btn.tool-remove.active{ background:var(--red); border-color:var(--red); color:#fff; }
+  /* Clearing the board is a whole-board edit, not a third brush, so it sits
+     on its own line and reads as an action rather than as a mode. */
+  .seg-row.wipe-row{ margin-bottom:14px; }
+  .seg-btn.tool-wipe{ font-size:11.5px; }
+  .seg-btn.tool-wipe:active{ background:var(--ink); color:var(--paper); }
+
+  /* ============ DEV PANEL ============ */
+  .dev-panel{
+    border:2px dashed var(--ink); background:var(--pastel-lavender);
+    padding:12px; margin:0 0 16px;
+  }
+  .dev-panel[hidden]{ display:none; }
+  .dev-head{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .dev-head button{
+    border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-family:inherit; font-weight:800; font-size:11px; line-height:1;
+    padding:4px 8px; cursor:pointer;
+  }
+  .dev-row{ display:flex; gap:8px; margin-bottom:8px; }
+  .dev-row button{
+    flex:1; border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-family:inherit; font-weight:800; font-size:11.5px; text-transform:uppercase;
+    letter-spacing:.02em; padding:9px 4px; cursor:pointer;
+  }
+  .dev-row button:active{ background:var(--ink); color:var(--paper); }
+  .dev-row button.on{ background:var(--ink); color:var(--paper); }
+  .dev-stats{
+    font-size:11px; font-weight:700; letter-spacing:.02em;
+    font-variant-numeric:tabular-nums; margin-top:10px;
+  }
+  .dev-note{ font-size:10px; font-weight:600; line-height:1.45; opacity:.75; margin-top:6px; }
 
   /* ============ SIM STAGE ============ */
   .stage-card{
@@ -339,6 +374,7 @@
   :root[data-view="desktop"] .slider-row,
   :root[data-view="desktop"] .seg-row,
   :root[data-view="desktop"] .scenario-row,
+  :root[data-view="desktop"] .dev-panel,
   :root[data-view="desktop"] .help-pop,
   :root[data-view="desktop"] .section-label,
   :root[data-view="desktop"] .hint{ max-width:470px; margin-left:auto; margin-right:auto; }
@@ -419,6 +455,9 @@
       <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
       <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
     </div>
+    <div class="seg-row wipe-row">
+      <button class="seg-btn tool-wipe" id="tool-wipe" type="button">Alle N&auml;gel entfernen<span class="sub">Leeres Brett &mdash; der Berg bleibt liegen</span></button>
+    </div>
 
     <div class="stage-card">
       <div class="stage" id="stage">
@@ -463,6 +502,29 @@
       </button>
     </div>
     <div class="hint" id="hint">Ein einzelner Wurf sagt nichts. Erst viele Kugeln zeigen das Klima.</div>
+
+    <!-- Dev panel: hidden unless #dev is in the URL, the wordmark is tapped
+         five times, or Shift+D is pressed. For trying out scenarios with
+         far more balls than the slider offers. -->
+    <div class="dev-panel" id="dev-panel" hidden>
+      <div class="dev-head">
+        <span>Dev-Modus</span>
+        <button type="button" id="dev-close" aria-label="Dev-Modus schlie&szlig;en">Schlie&szlig;en</button>
+      </div>
+      <div class="dev-row">
+        <button type="button" id="dev-add-1000">+1000 Kugeln</button>
+        <button type="button" id="dev-add-5000">+5000 Kugeln</button>
+      </div>
+      <div class="dev-row">
+        <button type="button" id="dev-speed">Zeitraffer &times;1</button>
+        <button type="button" id="dev-collide" class="on">Kollisionen: an</button>
+      </div>
+      <div class="dev-row">
+        <button type="button" id="dev-clear-balls">Kugeln zur&uuml;cksetzen</button>
+      </div>
+      <div class="dev-stats" id="dev-stats">&mdash;</div>
+      <div class="dev-note">Kugeln werden zugegeben, nicht ersetzt. Zeitraffer rechnet mehrere Simulationsschritte pro Bild &mdash; die Statistik bleibt identisch, nur die Wartezeit schrumpft.</div>
+    </div>
 
     <div class="explainer">
       <details class="topic">
@@ -662,6 +724,21 @@
     return p;
   }
 
+  // A board with every nail pulled out. Reachable in one tap, because
+  // clearing it by hand would be a hundred and fifty of them -- and because
+  // the empty board makes the point on its own: with nothing to deflect
+  // them, every ball falls straight through into the middle bin, and a pile
+  // of chance events collapses into a single certain outcome.
+  function emptyPins() {
+    var p = [];
+    for (var q = 0; q < LEVELS; q++) {
+      var row = [];
+      for (var j = 0; j < HSPAN; j++) row.push(false);
+      p.push(row);
+    }
+    return p;
+  }
+
   // A preset is expressed the way a visitor edits the board: by putting
   // extra nails in. A nail wedged into a gap is met off-centre, so it does
   // not split the flow evenly -- it tends to send the ball onward in the
@@ -726,25 +803,48 @@
   }
 
   var bins = new Array(BINS).fill(0);
-  var binSamples = [];   // bin index per settled ball, for mean/sd
+  var settled = 0;       // how many balls the bins hold, for the readout
+  // The bins are the whole sample: mean, spread and extremes are read back
+  // out of thirteen counters rather than out of a list with one entry per
+  // ball, so topping the board up to several thousand balls costs nothing.
 
   // ============ BALLS ============
   var balls = [];        // live balls in flight
   var toRelease = 0;     // how many are still queued
   var releaseTimer = 0;
   var releaseEvery = 0.055;  // seconds between drops, set per run
+  var MAX_SPAWN_PER_TICK = 40;  // never dump a whole queue into one frame
   // No cap on how many balls may be in flight: a batch is meant to fall as
   // one shower, and capping it made 365 balls arrive as three separate
   // waves of 120.
 
+  // The mouth the feed drops from. Every ball is still aimed at the apex,
+  // so widening the mouth only changes what the queue looks like on its way
+  // down -- never which slot the ball enters the board on.
+  var FEED_W = 0.10;        // how wide the stream is scattered
+  var FEED_TOP = 0.030;     // topmost spawn height, inside the funnel
+  var FEED_H = 0.030;       // vertical scatter of the spawn height
+  var FIRST_Y = TOP_Y - PIN_R - BALL_R;   // where the apex nail is met
+
   function spawnBall() {
     // h = the ball's position in half-columns, advanced level by level.
     // Tracking it directly is what makes the board exactly binomial.
+    //
+    // Balls used to start at exactly the same point with exactly the same
+    // speed. Two balls released in the same frame were then welded together
+    // for the whole drop -- identical height, identical timing -- and came
+    // down as one horizontal front. Each ball now gets its own place in the
+    // funnel mouth and its own drop speed, and the sideways speed is chosen
+    // so that every one of them still arrives exactly at the apex.
+    var x0 = 0.5 + (Math.random() - 0.5) * FEED_W;
+    var y0 = FEED_TOP + Math.random() * FEED_H;
+    var vy0 = 0.10 + Math.random() * 0.05;
+
     balls.push({
-      x: 0.5,
-      y: 0.045,
-      vx: 0,
-      vy: 0.12,
+      x: x0,
+      y: y0,
+      vx: (0.5 - x0) / fallTime(vy0, Math.max(0.001, FIRST_Y - y0)),
+      vy: vy0,
       h: 0,
       dir: 0,
       hop: true,
@@ -770,14 +870,19 @@
     return 1 - COL_AVAIL * (bins[bi] / binMax());
   }
 
-  // Time for one hop: solve ROW_DY = vy0*t + g*t^2/2 for t, so the ball
-  // leaves a pin on a parabola that lands exactly on the next pin down.
-  // Levels are half a row apart, so a hop covers half the vertical drop
-  // a full row used to.
-  function hopTime(vy0) {
+  // Time to fall dy when starting downwards at vy0: solve
+  // dy = vy0*t + g*t^2/2 for t. Used for the hop from one level to the
+  // next, and for aiming a freshly spawned ball at the apex.
+  function fallTime(vy0, dy) {
     var a = GRAVITY / 2;
-    var dy = ROW_DY / 2;
     return (-vy0 + Math.sqrt(vy0 * vy0 + 4 * a * dy)) / (2 * a);
+  }
+
+  // One hop: the ball leaves a pin on a parabola that lands exactly on the
+  // next pin down. Levels are half a row apart, so a hop covers half the
+  // vertical drop a full row used to.
+  function hopTime(vy0) {
+    return fallTime(vy0, ROW_DY / 2);
   }
 
   function stepBall(b) {
@@ -790,7 +895,15 @@
     // them, where a visitor can wedge an extra nail.
     if (b.nextRow < LEVELS && b.y >= levelY(b.nextRow) - PIN_R - BALL_R) {
       var q = b.nextRow;
-      b.x = halfX(0, b.h);
+      // Ease back onto the lattice rather than snapping onto it. Contact
+      // with other balls nudges a ball off its line, and a hard reset would
+      // read as a teleport; the residual offset is capped so a jostled ball
+      // can never appear a whole column away from the slot it is really in.
+      var lat = halfX(0, b.h);
+      var off = b.x - lat;
+      var cap = COL_DX * 0.35;
+      if (off > cap) off = cap; else if (off < -cap) off = -cap;
+      b.x = lat + off * 0.5;
       b.y = levelY(q) - PIN_R - BALL_R * 0.5;
 
       var nail = pinAt(q, b.h);
@@ -842,18 +955,166 @@
     // committed to; letting it keep drifting sideways here would smear the
     // result across neighbouring bins and flatten the curve.
     if (b.nextRow < LEVELS) return;
-    if (b.vx !== 0 && Math.abs(b.x - b.lastTarget) < 0.004) {
+    var drift = b.lastTarget - b.x;
+    if (Math.abs(drift) < 0.004) {
       b.x = b.lastTarget;
       b.vx = 0;
+    } else if (b.vx === 0) {
+      // Shoved off its column by another ball after it had already lined
+      // up. Slide back rather than falling where the crowd left it.
+      b.vx = drift * 6;
+      if (b.vx > VX_MAX) b.vx = VX_MAX; else if (b.vx < -VX_MAX) b.vx = -VX_MAX;
     }
     if (b.y < BIN_TOP) return;
 
-    var bIdx = binIndex(b.x);
+    // Count the ball into the column the nails chose for it, not into
+    // whichever bin it happens to overlap: a late shove from a neighbour
+    // must never move a result from one bin to the next.
+    var bIdx = binIndex(b.lastTarget);
     var top = heapTop(bIdx);
     if (b.y + BALL_R >= top) {
       b.settled = true;
       b.bin = bIdx;
       b.y = top - BALL_R;
+    }
+  }
+
+  // ============ BALL-TO-BALL CONTACT ============
+  // The board stays a scripted binomial walk: a ball's column is decided at
+  // the nails and its x is pulled back onto the lattice at every level.
+  // Contact between balls is resolved on top of that, as a jostle -- two
+  // overlapping balls are pushed apart and trade a little speed, and the
+  // lattice straightens them out again on the next level. The shower reads
+  // like a crowd of real balls, while the distribution stays exactly the
+  // binomial the exhibit is about. Letting the collisions decide where a
+  // ball goes instead would quietly bend the curve out of shape, which is
+  // the one thing this board must not do.
+  //
+  // Pairs are found with a uniform grid of one ball diameter per cell, so
+  // the work grows with the number of balls rather than with its square:
+  // several thousand balls in flight still fit comfortably in a frame.
+  var ballCollisions = true;
+  var COLL_STIFF = 0.5;      // share of the overlap taken out per iteration
+  var COLL_BOUNCE = 0.25;    // share of the closing speed given back
+  var COLL_ITERS = 2;
+  var VX_MAX = 0.5, VY_MIN = -0.4;
+
+  // The stage is taller than it is wide and radii are a fraction of its
+  // width, so a ball is a circle in pixels but an ellipse in unit space.
+  // Contact is therefore measured in "width units": y is multiplied by the
+  // aspect ratio, which makes the metric isotropic again.
+  var ASPECT = 4 / 3;
+
+  var cellOf = null, cellCursor = null, cellStart = null, cellItems = null;
+  var NB_DX = [1, -1, 0, 1], NB_DY = [0, 1, 1, 1];
+
+  function ensureGrid(cells, n) {
+    if (!cellStart || cellStart.length < cells + 1) {
+      cellStart = new Int32Array(cells + 1);
+      cellCursor = new Int32Array(cells + 1);
+    }
+    if (!cellOf || cellOf.length < n) {
+      cellOf = new Int32Array(n * 2);
+      cellItems = new Int32Array(n * 2);
+    }
+  }
+
+  function contact(i, j) {
+    var a = balls[i], b = balls[j];
+    var dx = b.x - a.x;
+    var dy = (b.y - a.y) * ASPECT;
+    var d2 = dx * dx + dy * dy;
+    var D = BALL_R * 2;
+    if (d2 >= D * D) return;
+    if (d2 < 1e-12) { a.x -= 0.0004; b.x += 0.0004; return; }
+
+    var d = Math.sqrt(d2);
+    var nx = dx / d, ny = dy / d;
+    var push = (D - d) * 0.5 * COLL_STIFF;
+    a.x -= nx * push; a.y -= ny * push / ASPECT;
+    b.x += nx * push; b.y += ny * push / ASPECT;
+
+    // Closing speed along the contact normal, in the same width units the
+    // positions are compared in. Only balls actually moving together get an
+    // impulse, so a resting overlap does not pump energy into the pile.
+    var rvn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ASPECT * ny;
+    if (rvn >= 0) return;
+    var imp = -rvn * (1 + COLL_BOUNCE) * 0.5;
+    a.vx -= imp * nx; a.vy -= imp * ny / ASPECT;
+    b.vx += imp * nx; b.vy += imp * ny / ASPECT;
+  }
+
+  function resolveCollisions() {
+    var n = balls.length;
+    if (!ballCollisions || n < 2) return;
+
+    var D = BALL_R * 2;
+    var inv = 1 / D;
+    var i, b;
+
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (i = 0; i < n; i++) {
+      b = balls[i];
+      var py = b.y * ASPECT;
+      if (b.x < minX) minX = b.x;
+      if (b.x > maxX) maxX = b.x;
+      if (py < minY) minY = py;
+      if (py > maxY) maxY = py;
+    }
+
+    var cols = Math.floor((maxX - minX) * inv) + 1;
+    var rows = Math.floor((maxY - minY) * inv) + 1;
+    if (cols < 1) cols = 1;
+    if (rows < 1) rows = 1;
+    var cells = cols * rows;
+    if (cells > 262144) return;   // absurd spread: skip a frame rather than stall
+
+    ensureGrid(cells, n);
+
+    // counting sort of the balls into their cells
+    for (i = 0; i <= cells; i++) cellStart[i] = 0;
+    for (i = 0; i < n; i++) {
+      b = balls[i];
+      var cx = Math.floor((b.x - minX) * inv);
+      var cy = Math.floor((b.y * ASPECT - minY) * inv);
+      if (cx < 0) cx = 0; else if (cx >= cols) cx = cols - 1;
+      if (cy < 0) cy = 0; else if (cy >= rows) cy = rows - 1;
+      var c = cy * cols + cx;
+      cellOf[i] = c;
+      cellStart[c + 1]++;
+    }
+    for (i = 0; i < cells; i++) cellStart[i + 1] += cellStart[i];
+    for (i = 0; i < cells; i++) cellCursor[i] = cellStart[i];
+    for (i = 0; i < n; i++) cellItems[cellCursor[cellOf[i]]++] = i;
+
+    // Each cell is tested against itself and the four cells that follow it
+    // in scan order, which covers every neighbouring pair exactly once.
+    for (var it = 0; it < COLL_ITERS; it++) {
+      for (var cy2 = 0; cy2 < rows; cy2++) {
+        for (var cx2 = 0; cx2 < cols; cx2++) {
+          var base = cy2 * cols + cx2;
+          var s0 = cellStart[base], e0 = cellStart[base + 1];
+          if (s0 === e0) continue;
+          for (var a = s0; a < e0; a++) {
+            var ia = cellItems[a];
+            for (var m = a + 1; m < e0; m++) contact(ia, cellItems[m]);
+            for (var k = 0; k < 4; k++) {
+              var gx = cx2 + NB_DX[k], gy = cy2 + NB_DY[k];
+              if (gx < 0 || gx >= cols || gy < 0 || gy >= rows) continue;
+              var nb = gy * cols + gx;
+              for (var t = cellStart[nb]; t < cellStart[nb + 1]; t++) contact(ia, cellItems[t]);
+            }
+          }
+        }
+      }
+    }
+
+    // A shove must never throw a ball off the board or send it flying.
+    for (i = 0; i < n; i++) {
+      b = balls[i];
+      if (b.x < BALL_R) b.x = BALL_R; else if (b.x > 1 - BALL_R) b.x = 1 - BALL_R;
+      if (b.vx > VX_MAX) b.vx = VX_MAX; else if (b.vx < -VX_MAX) b.vx = -VX_MAX;
+      if (b.vy < VY_MIN) b.vy = VY_MIN;
     }
   }
 
@@ -883,6 +1144,7 @@
     });
     boardCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ballCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (W > 0 && H > 0) ASPECT = H / W;
   }
 
   // ============ DRAWING ============
@@ -1020,8 +1282,7 @@
 
   // A smoothed outline over the bin counts: the emerging "climate".
   function drawCurve() {
-    var total = binSamples.length;
-    if (total < 12) return;
+    if (settled < 12) return;
     var maxN = binMax();
 
     var pts = [];
@@ -1047,15 +1308,30 @@
   }
 
   // ============ STATISTICS ============
+  // Mean, spread and the share of extremes, read straight off the bin
+  // counts. A bin's index is the value every ball in it landed on, so this
+  // is the exact same figure a list of samples would give.
+  function statsFromBins() {
+    var i, n = 0, sum = 0;
+    for (i = 0; i < BINS; i++) { n += bins[i]; sum += i * bins[i]; }
+    if (n === 0) return null;
+    var mean = sum / n, varr = 0;
+    for (i = 0; i < BINS; i++) { var d = i - mean; varr += bins[i] * d * d; }
+    // "Extreme" = the outer two bins on each side.
+    var ext = bins[0] + bins[1] + bins[BINS - 2] + bins[BINS - 1];
+    return { n: n, mean: mean, sd: Math.sqrt(varr / n), ext: ext };
+  }
+
   function updateReadout() {
     // Show what is still on its way, so topping the board up mid-run reads
     // as "more coming" rather than looking like nothing happened.
     var pending = toRelease + balls.length;
     roFallen.textContent = pending > 0
-      ? binSamples.length + ' (+' + pending + ')'
-      : String(binSamples.length);
+      ? settled + ' (+' + pending + ')'
+      : String(settled);
 
-    if (binSamples.length === 0) {
+    var st = statsFromBins();
+    if (!st) {
       roMean.textContent = '—';
       roSd.textContent = '—';
       roExtreme.textContent = '0 %';
@@ -1064,28 +1340,12 @@
 
     // Report in "bins away from centre" so the numbers read like a
     // temperature anomaly rather than an internal index.
-    var centre = (BINS - 1) / 2;
-    var sum = 0;
-    for (var i = 0; i < binSamples.length; i++) sum += binSamples[i];
-    var mean = sum / binSamples.length;
-    var varr = 0;
-    for (var j = 0; j < binSamples.length; j++) {
-      var d = binSamples[j] - mean;
-      varr += d * d;
-    }
-    var sd = Math.sqrt(varr / binSamples.length);
-
-    var anomaly = mean - centre;
+    var anomaly = st.mean - (BINS - 1) / 2;
     roMean.textContent = (anomaly >= 0 ? '+' : '−') +
       Math.abs(anomaly).toFixed(2).replace('.', ',');
-    roSd.textContent = sd.toFixed(2).replace('.', ',');
+    roSd.textContent = st.sd.toFixed(2).replace('.', ',');
 
-    // "Extreme" = the outer two bins on each side.
-    var ext = 0;
-    for (var k = 0; k < binSamples.length; k++) {
-      if (binSamples[k] <= 1 || binSamples[k] >= BINS - 2) ext++;
-    }
-    var pct = (ext / binSamples.length) * 100;
+    var pct = (st.ext / st.n) * 100;
     roExtreme.textContent = pct.toFixed(pct < 10 ? 1 : 0).replace('.', ',') + ' %';
   }
 
@@ -1105,6 +1365,11 @@
   var countLabel = document.getElementById('ball-count-label');
   var toolAddBtn = document.getElementById('tool-add');
   var toolRemoveBtn = document.getElementById('tool-remove');
+  var toolWipeBtn = document.getElementById('tool-wipe');
+  var devPanel = document.getElementById('dev-panel');
+  var devStats = document.getElementById('dev-stats');
+  var devSpeedBtn = document.getElementById('dev-speed');
+  var devCollideBtn = document.getElementById('dev-collide');
   var scenarioRow = document.getElementById('scenario-row');
   var hint = document.getElementById('hint');
 
@@ -1227,6 +1492,18 @@
   toolAddBtn.addEventListener('click', function () { setTool('add'); });
   toolRemoveBtn.addEventListener('click', function () { setTool('remove'); });
 
+  // Clearing the board is a hand edit like any other, only faster, so it
+  // keeps the heap: the whole point is to watch the pile bend towards the
+  // new layout. Reset is there for a clean slate.
+  toolWipeBtn.addEventListener('click', function () {
+    pins = emptyPins();
+    setTool('add');
+    dismissHint();
+    markCustomScenario();
+    drawBoard();
+    updateHint();
+  });
+
   var scenarioBtns = Array.prototype.slice.call(scenarioRow.querySelectorAll('.scenario-btn'));
 
   function setScenario(name) {
@@ -1263,11 +1540,101 @@
 
   countSlider.addEventListener('input', updateCountLabel);
 
+  // ============ DEV MODE ============
+  // Not part of the exhibit: a hidden panel for trying out scenarios with
+  // far more balls than the slider hands out. Opened with #dev in the URL,
+  // by tapping the wordmark five times, or with Shift+D, and remembered
+  // afterwards so a phone does not have to retype the URL.
+  var devOn = false;
+  var timeScale = 1;
+  var SPEEDS = [1, 2, 4, 8];
+  var DEV_KEY = 'scapeDevMode';
+
+  function devWanted() {
+    if (/(?:^|[?&#])dev(?:=1)?(?:$|[&#])/.test(location.search + location.hash)) return true;
+    try { return localStorage.getItem(DEV_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function setDevMode(on) {
+    devOn = !!on;
+    devPanel.hidden = !devOn;
+    try { localStorage.setItem(DEV_KEY, devOn ? '1' : '0'); } catch (e) {}
+    if (!devOn) {
+      timeScale = 1;
+      devSpeedBtn.textContent = 'Zeitraffer ×1';
+    } else {
+      updateDevStats();
+    }
+  }
+
+  function updateDevStats() {
+    devStats.textContent =
+      'aktiv ' + balls.length +
+      ' · Warteschlange ' + toRelease +
+      ' · gelandet ' + settled +
+      ' · ' + Math.round(fps) + ' fps';
+  }
+
+  function setupDevMode() {
+    document.getElementById('dev-close').addEventListener('click', function () {
+      setDevMode(false);
+    });
+
+    document.getElementById('dev-add-1000').addEventListener('click', function () {
+      devDrop(1000);
+    });
+    document.getElementById('dev-add-5000').addEventListener('click', function () {
+      devDrop(5000);
+    });
+    document.getElementById('dev-clear-balls').addEventListener('click', function () {
+      clearBalls();
+      setMode(IDLE);
+      drawBalls();
+      updateReadout();
+      updateDevStats();
+    });
+
+    devSpeedBtn.addEventListener('click', function () {
+      var i = SPEEDS.indexOf(timeScale);
+      timeScale = SPEEDS[(i + 1) % SPEEDS.length];
+      devSpeedBtn.textContent = 'Zeitraffer ×' + timeScale;
+    });
+
+    devCollideBtn.addEventListener('click', function () {
+      ballCollisions = !ballCollisions;
+      devCollideBtn.textContent = 'Kollisionen: ' + (ballCollisions ? 'an' : 'aus');
+      devCollideBtn.classList.toggle('on', ballCollisions);
+    });
+
+    // Five taps on the wordmark: reachable on a phone, and nothing a
+    // visitor stumbles into by accident.
+    var taps = 0, tapT = 0;
+    document.querySelector('.wordmark').addEventListener('click', function () {
+      var now = Date.now();
+      taps = (now - tapT < 800) ? taps + 1 : 1;
+      tapT = now;
+      if (taps >= 5) { taps = 0; setDevMode(!devOn); }
+    });
+
+    window.addEventListener('keydown', function (ev) {
+      if (ev.key === 'D' && ev.shiftKey) setDevMode(!devOn);
+    });
+
+    setDevMode(devWanted());
+  }
+
+  function devDrop(n) {
+    dismissHint();
+    queueBalls(n);
+    setMode(RUNNING);
+    updateDevStats();
+  }
+
   // ============ RUN CONTROL ============
   function clearBalls() {
     balls = [];
     bins = new Array(BINS).fill(0);
-    binSamples = [];
+    settled = 0;
     toRelease = 0;
     releaseTimer = 0;
   }
@@ -1285,8 +1652,11 @@
     // the pins in between, which is the whole point of the exhibit.
     toRelease += n;
     // A batch falls as one shower, but with enough air between balls that
-    // they read as separate events rather than a solid stream.
-    releaseEvery = Math.max(0.030, Math.min(0.12, 12 / Math.max(1, n)));
+    // they read as separate events rather than a solid stream. Batches far
+    // beyond what the slider offers are a dev-mode stress test, so they are
+    // allowed to feed faster than the exhibit's own pace.
+    var floor = n > 1000 ? 0.008 : 0.030;
+    releaseEvery = Math.max(floor, Math.min(0.12, 12 / Math.max(1, n)));
   }
 
   function startRun() {
@@ -1325,21 +1695,31 @@
 
   // ============ ANIMATION LOOP ============
   var lastT = 0;
+  var fps = 0;
 
-  function frame(ts) {
-    requestAnimationFrame(frame);
-    if (!lastT) lastT = ts;
-    var dt = Math.min((ts - lastT) / 1000, 0.05);
-    lastT = ts;
-
-    if (mode !== RUNNING) return;
-
-    // release queued balls at a steady rate
-    releaseTimer += dt;
-    while (releaseTimer >= releaseEvery && toRelease > 0) {
-      releaseTimer -= releaseEvery;
-      spawnBall();
-      toRelease--;
+  function simTick(dt) {
+    // Release queued balls at a steady rate. The timer is deliberately not
+    // allowed to run on once the queue is empty: it used to keep counting
+    // up through the ten-odd seconds the last balls of a batch need to
+    // fall, so the next Start found all that credit waiting and spawned a
+    // few hundred balls in a single frame. Those balls were born at the
+    // same point with the same speed and stayed locked together for the
+    // whole drop -- the horizontal front of balls that showed up on the
+    // second and every following release, but never on the first.
+    if (toRelease > 0) {
+      releaseTimer += dt;
+      var budget = MAX_SPAWN_PER_TICK;
+      while (releaseTimer >= releaseEvery && toRelease > 0 && budget > 0) {
+        releaseTimer -= releaseEvery;
+        budget--;
+        spawnBall();
+        toRelease--;
+      }
+      // A frame that ran long, or a tab that was in the background, must
+      // not bank time either.
+      if (releaseTimer > releaseEvery) releaseTimer = releaseEvery;
+    } else {
+      releaseTimer = 0;
     }
 
     for (var s = 0; s < SUBSTEPS; s++) {
@@ -1348,14 +1728,32 @@
         stepBall(b);
         if (b.settled) {
           bins[b.bin]++;
-          binSamples.push(b.bin);
+          settled++;
           balls.splice(i, 1);
         }
       }
     }
 
+    resolveCollisions();
+  }
+
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    if (!lastT) lastT = ts;
+    var dt = Math.min((ts - lastT) / 1000, 0.05);
+    lastT = ts;
+    if (dt > 0) fps += ((1 / dt) - fps) * 0.1;
+
+    if (mode !== RUNNING) return;
+
+    // timeScale is 1 for visitors; dev mode raises it to run several
+    // simulation ticks per frame, which shortens the wait without touching
+    // the physics -- each tick is exactly the tick everyone else gets.
+    for (var rep = 0; rep < timeScale; rep++) simTick(dt);
+
     drawBalls();
     updateReadout();
+    if (devOn) updateDevStats();
 
     if (toRelease === 0 && balls.length === 0) setMode(DONE);
   }
@@ -1404,6 +1802,7 @@
     buildLattice();
     pins = defaultPins();
     setupViewToggle();
+    setupDevMode();
     layout();
     setTool('add');
     setMode(IDLE);
