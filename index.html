@@ -183,24 +183,20 @@
   .intro-blurb p.blurb{ margin-bottom:0; }
 
   /* ============ SEGMENTED CONTROLS ============ */
+  /* One row, three brushes: setting and removing a nail are two states of
+     the same tool, clearing the board is a one-shot action beside them.
+     Single-line labels (the popover already spells the behaviour out) keep
+     the whole group to one compact row instead of a caption-stacked pair. */
   .seg-row{ display:flex; gap:8px; margin-bottom:10px; }
   .seg-btn{
     flex:1; border:2px solid var(--ink); background:var(--paper); color:var(--ink);
-    font-family:inherit; font-weight:800; font-size:12px; text-transform:uppercase;
-    letter-spacing:.03em; padding:11px 6px; cursor:pointer; text-align:center;
+    font-family:inherit; font-weight:800; font-size:11px; text-transform:uppercase;
+    letter-spacing:.02em; padding:10px 4px; cursor:pointer; text-align:center; line-height:1.2;
   }
   .seg-btn.active{ background:var(--ink); color:var(--paper); }
   .seg-btn:disabled{ opacity:.4; cursor:default; }
-  .seg-btn .sub{
-    display:block; font-size:9px; font-weight:600; text-transform:none;
-    letter-spacing:0; opacity:.7; margin-top:2px;
-  }
   .seg-btn.tool-add.active{ background:var(--green); border-color:var(--green); color:#fff; }
   .seg-btn.tool-remove.active{ background:var(--red); border-color:var(--red); color:#fff; }
-  /* Clearing the board is a whole-board edit, not a third brush, so it sits
-     on its own line and reads as an action rather than as a mode. */
-  .seg-row.wipe-row{ margin-bottom:14px; }
-  .seg-btn.tool-wipe{ font-size:11.5px; }
   .seg-btn.tool-wipe:active{ background:var(--ink); color:var(--paper); }
 
   /* ============ DEV PANEL ============ */
@@ -232,6 +228,13 @@
     font-variant-numeric:tabular-nums; margin-top:10px;
   }
   .dev-note{ font-size:10px; font-weight:600; line-height:1.45; opacity:.75; margin-top:6px; }
+  .dev-slider-row{ margin-bottom:10px; }
+  .dev-slider-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  .dev-slider-head b{ font-size:12px; font-weight:700; letter-spacing:0; }
 
   /* ============ SIM STAGE ============ */
   .stage-card{
@@ -357,6 +360,14 @@
     padding:26px 20px 34px; border-top:2px solid var(--ink);
     font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; line-height:1.6;
   }
+  /* Quiet enough that a visitor's eye skips it, plain enough that anyone
+     looking for it finds it -- easier than tapping the wordmark five times. */
+  .dev-toggle-link{
+    display:block; margin-top:10px; border:0; background:none; padding:6px 0 0;
+    font-family:inherit; font-weight:700; font-size:9.5px; letter-spacing:.02em;
+    text-transform:none; color:var(--ink); opacity:.3; cursor:pointer;
+  }
+  .dev-toggle-link:active{ opacity:.6; }
 
   /* ============ DESKTOP VIEW ============
      Base styles above = mobile / vertical phone (the primary target).
@@ -450,13 +461,12 @@
       <p>Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden.</p>
       <p>Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel. So ein eingekeilter Nagel steht schr&auml;g im Weg: Jede Kugel, die ihn erreicht, prallt an ihm ab und wird eine Spalte nach au&szlig;en geworfen. Schon vier solche N&auml;gel verschieben den ganzen Berg sichtbar.</p>
       <p>Nur im hellen Dreieck kommen &uuml;berhaupt Kugeln vorbei &mdash; nur dort wirken N&auml;gel.</p>
+      <p><b>Alle N&auml;gel entfernen</b> leert das ganze Brett auf einen Schlag &mdash; der Berg bleibt liegen, nur trifft jede weitere Kugel auf keinen einzigen Nagel mehr.</p>
     </div>
     <div class="seg-row" id="tool-row">
-      <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen<span class="sub">Auf leere Stelle tippen</span></button>
-      <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen<span class="sub">Auf Nagel tippen</span></button>
-    </div>
-    <div class="seg-row wipe-row">
-      <button class="seg-btn tool-wipe" id="tool-wipe" type="button">Alle N&auml;gel entfernen<span class="sub">Leeres Brett &mdash; der Berg bleibt liegen</span></button>
+      <button class="seg-btn tool-add active" id="tool-add" data-tool="add">Nagel setzen</button>
+      <button class="seg-btn tool-remove" id="tool-remove" data-tool="remove">Nagel entfernen</button>
+      <button class="seg-btn tool-wipe" id="tool-wipe" type="button">Alle entfernen</button>
     </div>
 
     <div class="stage-card">
@@ -503,9 +513,9 @@
     </div>
     <div class="hint" id="hint">Ein einzelner Wurf sagt nichts. Erst viele Kugeln zeigen das Klima.</div>
 
-    <!-- Dev panel: hidden unless #dev is in the URL, the wordmark is tapped
-         five times, or Shift+D is pressed. For trying out scenarios with
-         far more balls than the slider offers. -->
+    <!-- Dev panel: hidden unless #dev is in the URL, the (dev) link at the
+         page foot is tapped, or Shift+D is pressed. For trying out
+         scenarios and tunables the exhibit itself does not offer. -->
     <div class="dev-panel" id="dev-panel" hidden>
       <div class="dev-head">
         <span>Dev-Modus</span>
@@ -521,9 +531,20 @@
       </div>
       <div class="dev-row">
         <button type="button" id="dev-clear-balls">Kugeln zur&uuml;cksetzen</button>
+        <button type="button" id="dev-compare">Vergleichslinie speichern</button>
       </div>
+
+      <div class="dev-slider-row">
+        <div class="dev-slider-head"><span>Kugel-Abstand (Start/Einzeln)</span><b id="dev-pacing-label">90&nbsp;ms</b></div>
+        <input type="range" id="dev-pacing" min="0" max="300" step="10" value="90" />
+      </div>
+      <div class="dev-slider-row">
+        <div class="dev-slider-head"><span>Nagel-Gr&ouml;&szlig;e</span><b id="dev-pinsize-label">100&nbsp;%</b></div>
+        <input type="range" id="dev-pinsize" min="50" max="300" step="10" value="100" />
+      </div>
+
       <div class="dev-stats" id="dev-stats">&mdash;</div>
-      <div class="dev-note">Kugeln werden zugegeben, nicht ersetzt. Zeitraffer rechnet mehrere Simulationsschritte pro Bild &mdash; die Statistik bleibt identisch, nur die Wartezeit schrumpft.</div>
+      <div class="dev-note">Kugeln werden zugegeben, nicht ersetzt. Zeitraffer rechnet mehrere Simulationsschritte pro Bild &mdash; die Statistik bleibt identisch, nur die Wartezeit schrumpft. Kugel-Abstand wirkt nur auf Start/Einzeln (0&nbsp;ms = automatisch) und nur, solange der Dev-Modus offen ist; die +1000/+5000-Sch&uuml;be bleiben davon unber&uuml;hrt. Nagel-Gr&ouml;&szlig;e ist rein optisch.</div>
     </div>
 
     <div class="explainer">
@@ -611,6 +632,7 @@
 
   <footer class="brand-footer">
     Wetter, Klima, Wandel.<br>Wir erkl&auml;ren es. &mdash; SCAPE&deg;
+    <button type="button" class="dev-toggle-link" id="dev-toggle">(dev)</button>
   </footer>
 </div>
 <script>
@@ -1193,7 +1215,9 @@
     // visitor put it there: they behave identically, so they should read
     // identically. A slot without a nail is simply blank -- a hole, drawn
     // as nothing, because that is exactly what the ball meets there.
-    var pr = radiusPx(PIN_R);
+    // Dev mode can draw them larger for a demo; it never changes where a
+    // ball actually bounces, only how visible the pin is.
+    var pr = radiusPx(PIN_R) * (devOn ? devPinScale : 1);
     boardCtx.fillStyle = INK;
     for (var q = 0; q < LEVELS; q++) {
       for (var j = 0; j < HSPAN; j++) {
@@ -1280,22 +1304,28 @@
     drawCurve();
   }
 
-  // A smoothed outline over the bin counts: the emerging "climate".
-  function drawCurve() {
-    if (settled < 12) return;
-    var maxN = binMax();
+  // Draws a smoothed outline over a set of bin counts, normalised to its
+  // own peak -- which is what makes two curves with different totals (a
+  // batch of 365 against a dev-mode run of 5000) comparable by shape.
+  function strokeCurve(counts, color, width, dash) {
+    var n = 0, i;
+    for (i = 0; i < BINS; i++) n += counts[i];
+    if (n < 12) return;
+    var maxN = 1;
+    for (i = 0; i < BINS; i++) maxN = Math.max(maxN, counts[i]);
 
     var pts = [];
     for (var b = 0; b < BINS; b++) {
       var cx = (EDGES[b] + EDGES[b + 1]) / 2;
       // Same scale the histogram columns use, so the curve traces their tops.
-      var h = (bins[b] / maxN) * COL_AVAIL;
+      var h = (counts[b] / maxN) * COL_AVAIL;
       pts.push({ x: cx * W, y: (1 - h) * H });
     }
 
-    ballCtx.strokeStyle = '#28348f';
-    ballCtx.lineWidth = 3;
+    ballCtx.strokeStyle = color;
+    ballCtx.lineWidth = width;
     ballCtx.lineJoin = 'round';
+    ballCtx.setLineDash(dash || []);
     ballCtx.beginPath();
     ballCtx.moveTo(pts[0].x, pts[0].y);
     for (var k = 0; k < pts.length - 1; k++) {
@@ -1305,6 +1335,15 @@
     }
     ballCtx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
     ballCtx.stroke();
+    if (dash && dash.length) ballCtx.setLineDash([]);
+  }
+
+  // The emerging "climate" (solid), plus a dev-mode snapshot of an earlier
+  // run (dashed) kept around so two experiments can be held up against
+  // each other on the same board.
+  function drawCurve() {
+    strokeCurve(bins, '#28348f', 3);
+    if (devOn && savedCurve) strokeCurve(savedCurve, '#c65a2a', 2.5, [7, 6]);
   }
 
   // ============ STATISTICS ============
@@ -1370,6 +1409,12 @@
   var devStats = document.getElementById('dev-stats');
   var devSpeedBtn = document.getElementById('dev-speed');
   var devCollideBtn = document.getElementById('dev-collide');
+  var devCompareBtn = document.getElementById('dev-compare');
+  var devPacingSlider = document.getElementById('dev-pacing');
+  var devPacingLabel = document.getElementById('dev-pacing-label');
+  var devPinSlider = document.getElementById('dev-pinsize');
+  var devPinLabel = document.getElementById('dev-pinsize-label');
+  var devToggleLink = document.getElementById('dev-toggle');
   var scenarioRow = document.getElementById('scenario-row');
   var hint = document.getElementById('hint');
 
@@ -1541,14 +1586,25 @@
   countSlider.addEventListener('input', updateCountLabel);
 
   // ============ DEV MODE ============
-  // Not part of the exhibit: a hidden panel for trying out scenarios with
-  // far more balls than the slider hands out. Opened with #dev in the URL,
-  // by tapping the wordmark five times, or with Shift+D, and remembered
-  // afterwards so a phone does not have to retype the URL.
+  // Not part of the exhibit: a hidden panel for trying out scenarios and
+  // tunables the exhibit itself does not offer. Opened with #dev in the
+  // URL, the small "(dev)" link at the page foot, or Shift+D, and
+  // remembered afterwards so a phone does not have to retype the URL.
   var devOn = false;
   var timeScale = 1;
   var SPEEDS = [1, 2, 4, 8];
   var DEV_KEY = 'scapeDevMode';
+  // A visual-only enlargement of the drawn nails -- it never touches PIN_R
+  // itself, so it cannot change where or when a ball actually bounces.
+  var devPinScale = 1;
+  // Milliseconds between balls for Start/Einzeln while dev mode is open;
+  // 0 leaves the exhibit's own automatic pacing alone. The +1000/+5000
+  // stress-test buttons always use the automatic pacing regardless of this
+  // -- they are for loading the board fast, not for testing the drop feel.
+  var devPacing = 90;
+  // A snapshot of a previous run's bin counts, drawn as a dashed curve
+  // alongside the live one so two experiments can be compared.
+  var savedCurve = null;
 
   function devWanted() {
     if (/(?:^|[?&#])dev(?:=1)?(?:$|[&#])/.test(location.search + location.hash)) return true;
@@ -1565,6 +1621,10 @@
     } else {
       updateDevStats();
     }
+    // Nail size and the comparison line are dev-only; leaving the panel
+    // must put the board straight back to what every other visitor sees.
+    drawBoard();
+    drawBalls();
   }
 
   function updateDevStats() {
@@ -1606,14 +1666,34 @@
       devCollideBtn.classList.toggle('on', ballCollisions);
     });
 
-    // Five taps on the wordmark: reachable on a phone, and nothing a
-    // visitor stumbles into by accident.
-    var taps = 0, tapT = 0;
-    document.querySelector('.wordmark').addEventListener('click', function () {
-      var now = Date.now();
-      taps = (now - tapT < 800) ? taps + 1 : 1;
-      tapT = now;
-      if (taps >= 5) { taps = 0; setDevMode(!devOn); }
+    devCompareBtn.addEventListener('click', function () {
+      if (savedCurve) {
+        savedCurve = null;
+        devCompareBtn.textContent = 'Vergleichslinie speichern';
+      } else {
+        // A copy: the live bins keep filling after this, and must not
+        // drag the saved snapshot along with them.
+        savedCurve = bins.slice();
+        devCompareBtn.textContent = 'Vergleichslinie entfernen';
+      }
+      drawBalls();
+    });
+
+    devPacingSlider.addEventListener('input', function () {
+      devPacing = parseInt(devPacingSlider.value, 10);
+      devPacingLabel.textContent = devPacing > 0 ? (devPacing + ' ms') : 'automatisch';
+    });
+
+    devPinSlider.addEventListener('input', function () {
+      devPinScale = parseInt(devPinSlider.value, 10) / 100;
+      devPinLabel.textContent = devPinSlider.value + ' %';
+      drawBoard();
+    });
+
+    // The small link at the page foot: reachable on a phone, and quiet
+    // enough that a visitor's eye passes right over it.
+    devToggleLink.addEventListener('click', function () {
+      setDevMode(!devOn);
     });
 
     window.addEventListener('keydown', function (ev) {
@@ -1659,15 +1739,24 @@
     releaseEvery = Math.max(floor, Math.min(0.12, 12 / Math.max(1, n)));
   }
 
+  // A dev-mode override on top of queueBalls' own pacing, for Start and
+  // Einzeln only -- the two controls a visitor actually presses, and so
+  // the only place "how does the drop feel" is worth testing.
+  function applyDevPacing() {
+    if (devOn && devPacing > 0) releaseEvery = devPacing / 1000;
+  }
+
   function startRun() {
     dismissHint();
     queueBalls(parseInt(countSlider.value, 10));
+    applyDevPacing();
     setMode(RUNNING);
   }
 
   function dropSingle() {
     dismissHint();
     queueBalls(1);
+    applyDevPacing();
     releaseTimer = releaseEvery;   // release it immediately
     setMode(RUNNING);
   }

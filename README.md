@@ -68,9 +68,18 @@ cases that the accompanying text explains.
 - A dev panel, not part of the exhibit, drops 1 000 or 5 000 balls at
   once, toggles ball-to-ball contact, and runs the simulation at up to
   eight times speed (whole extra simulation ticks per frame, so the
-  statistics are untouched and only the waiting shrinks). Open it with
-  `#dev` or `?dev=1` in the URL, by tapping the wordmark five times, or
-  with Shift+D; it is remembered afterwards.
+  statistics are untouched and only the waiting shrinks). It also holds a
+  ball-spacing slider that slows Start and Einzeln down to a visible
+  trickle for testing the drop feel (0 ms = the exhibit's own automatic
+  pacing; the +1 000/+5 000 buttons are unaffected, since they exist to
+  load the board fast rather than to feel realistic), a nail-size slider
+  that enlarges the drawn pins for a demo without changing where a ball
+  actually bounces, and a button that freezes the current distribution as
+  a dashed reference curve so a second experiment can be held up against
+  it. Open the panel with `#dev` or `?dev=1` in the URL, the small `(dev)`
+  link at the page foot, or Shift+D; it is remembered afterwards, and
+  every dev-only effect (pacing, nail size, the reference curve) switches
+  off the moment the panel is closed.
 - Design: SCAPE° corporate design (Archivo, thick ink borders, poster-hero
   layout), mobile-first and optimized for touch, with a desktop view that
   is auto-detected and can be toggled by hand.
