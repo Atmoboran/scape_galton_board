@@ -122,15 +122,7 @@
 
   main{ padding:0 20px 30px; }
 
-  /* ============ SECTION LABELS ============ */
-  .section-label{
-    font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
-    margin:26px 0 12px;
-  }
-  .section-label.first{ margin-top:0; }
-  .section-label.with-help{
-    display:flex; align-items:center; gap:8px; justify-content:space-between;
-  }
+  /* ============ INFO POPOVERS ============ */
   .info-dot{
     flex:none; width:20px; height:20px; padding:0;
     border:2px solid var(--ink); background:var(--paper); color:var(--ink);
@@ -182,19 +174,6 @@
   .intro-blurb{ margin:0 0 22px; }
   .intro-blurb p.blurb{ margin-bottom:0; }
 
-  /* ============ SEGMENTED CONTROLS ============ */
-  /* A single action button (clear every nail); a tap on the board itself
-     now adds or removes a nail directly, so no mode toggle is needed here
-     any more. */
-  .seg-row{ display:flex; gap:8px; margin-bottom:10px; }
-  .seg-btn{
-    flex:1; border:2px solid var(--ink); background:var(--paper); color:var(--ink);
-    font-family:inherit; font-weight:800; font-size:11px; text-transform:uppercase;
-    letter-spacing:.02em; padding:10px 4px; cursor:pointer; text-align:center; line-height:1.2;
-  }
-  .seg-btn:disabled{ opacity:.4; cursor:default; }
-  .seg-btn.tool-wipe:active{ background:var(--ink); color:var(--paper); }
-
   /* ============ DEV PANEL ============ */
   .dev-panel{
     border:2px dashed var(--ink); background:var(--pastel-lavender);
@@ -236,7 +215,7 @@
   .stage{
     position:relative;
     width:100%;
-    aspect-ratio:3/4;
+    aspect-ratio:1/1;
     touch-action:none;
     overflow:hidden;
     transform-origin:center center;
@@ -260,11 +239,12 @@
   .stage-hint-badge.attn{ animation:badge-pulse 1.1s ease-in-out infinite; }
 
   /* A small speech-bubble over a histogram column, showing its exact
-     count. Lives inside .stage so it pans and zooms with the board. */
+     count, plus one line per active comparison line at that same column.
+     Lives inside .stage so it pans and zooms with the board. */
   .bin-tooltip{
     position:absolute; z-index:5; transform:translate(-50%,-130%);
     background:var(--ink); color:var(--paper);
-    font-weight:800; font-size:11px; letter-spacing:.02em;
+    font-weight:800; font-size:11px; letter-spacing:.02em; line-height:1.6;
     padding:4px 8px; white-space:nowrap; pointer-events:none;
   }
   .bin-tooltip[hidden]{ display:none; }
@@ -272,43 +252,56 @@
     content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%);
     border:5px solid transparent; border-top-color:var(--ink);
   }
-
-  /* Floating +/- pair for precise nail placement, pinned to the card frame
-     so it never pans or scales away with the board underneath it. */
-  .zoom-ctl{
-    position:absolute; right:8px; bottom:8px; z-index:4;
-    display:flex; gap:6px;
+  .tt-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    margin-right:4px;
   }
-  .zoom-ctl button{
-    width:30px; height:30px; border:2px solid var(--ink); background:var(--paper);
-    color:var(--ink); font-family:inherit; font-weight:800; font-size:16px;
-    line-height:1; cursor:pointer; padding:0;
-  }
-  .zoom-ctl button:disabled{ opacity:.35; cursor:default; }
-  .zoom-ctl button:active:not(:disabled){ background:var(--ink); color:var(--paper); }
-  #zoom-reset{ font-size:10px; }
 
   .axis-note{
     font-size:10.5px; font-weight:600; line-height:1.5; opacity:.8;
-    margin:8px 0 16px;
+    margin:8px 0 14px;
   }
 
   /* ============ COMPARISON LINES ============ */
-  .compare-label{ margin-top:0; }
-  .compare-row{ display:flex; gap:8px; margin-bottom:16px; }
+  /* Small and right under the board it describes, rather than a full
+     section of its own: three fixed-size tiles plus a label, tap an empty
+     one to freeze the current run as a dashed reference, tap a filled one
+     to clear it. */
+  .compare-mini{ display:flex; align-items:center; gap:6px; margin:0 0 8px; }
+  .compare-mini-label{
+    font-size:9px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    opacity:.7; margin-right:2px;
+  }
   .compare-chip{
-    flex:1; display:flex; align-items:center; justify-content:center;
-    height:34px; border:2px solid var(--ink); background:var(--paper);
+    flex:none; width:26px; height:26px; display:flex; align-items:center;
+    justify-content:center; border:2px solid var(--ink); background:var(--paper);
     cursor:pointer; padding:0;
   }
   .compare-num{
-    font-family:inherit; font-weight:800; font-size:13px; color:var(--ink);
+    font-family:inherit; font-weight:800; font-size:11px; color:var(--ink);
   }
   .compare-chip.filled{ border-style:dashed; }
   .compare-chip[data-slot="0"].filled{ background:#c65a2a; border-color:#c65a2a; }
   .compare-chip[data-slot="1"].filled{ background:#4a2e83; border-color:#4a2e83; }
   .compare-chip[data-slot="2"].filled{ background:#1093c4; border-color:#1093c4; }
   .compare-chip.filled .compare-num{ color:#fff; }
+
+  /* ============ BOARD OPTIONS (scenario popup + wipe) ============ */
+  /* Everything about setting the board up -- which scenario, whether to
+     clear it -- collapses into one row under the board. Szenario opens a
+     small panel instead of sitting permanently expanded as three buttons. */
+  .board-opts{ margin:0 0 18px; }
+  .opt-row{ display:flex; gap:8px; align-items:stretch; }
+  .opt-btn{
+    flex:1; border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+    font-family:inherit; font-weight:800; font-size:11px; text-transform:uppercase;
+    letter-spacing:.02em; padding:10px 6px; cursor:pointer; text-align:center; line-height:1.2;
+  }
+  .opt-btn:active{ background:var(--ink); color:var(--paper); }
+  #scenario-toggle[aria-expanded="true"]{ background:var(--ink); color:var(--paper); }
+  .opt-caret{ font-size:8px; margin-left:3px; }
+  .scenario-panel{ margin-top:8px; }
+  .scenario-panel[hidden]{ display:none; }
 
   /* ============ READOUT ============ */
   .readout{
@@ -427,15 +420,14 @@
   :root[data-view="desktop"] .btn-row,
   :root[data-view="desktop"] .readout,
   :root[data-view="desktop"] .axis-note,
-  :root[data-view="desktop"] .compare-row,
-  :root[data-view="desktop"] .seg-row,
+  :root[data-view="desktop"] .compare-mini,
+  :root[data-view="desktop"] .board-opts,
   :root[data-view="desktop"] .scenario-row,
   :root[data-view="desktop"] .dev-panel,
   :root[data-view="desktop"] .help-pop,
-  :root[data-view="desktop"] .section-label,
   :root[data-view="desktop"] .hint{ max-width:470px; margin-left:auto; margin-right:auto; }
   :root[data-view="desktop"] .btn-row button:hover:not(:disabled){ opacity:.85; }
-  :root[data-view="desktop"] .seg-btn:hover:not(:disabled){ opacity:.85; }
+  :root[data-view="desktop"] .opt-btn:hover:not(:disabled){ opacity:.85; }
 </style>
 </head>
 <body>
@@ -483,36 +475,6 @@
       </div>
     </div>
 
-    <div class="section-label first with-help">
-      <span>Szenario</span>
-      <button type="button" class="info-dot" data-help="scenario-help" aria-expanded="false" aria-controls="scenario-help" aria-label="Szenarien erkl&auml;ren">?</button>
-    </div>
-    <div class="help-pop" id="scenario-help" hidden>
-      <p>Die Szenarien erfinden keine Statistik &mdash; sie keilen nur ein paar zus&auml;tzliche N&auml;gel zwischen die Reihen, genau wie du es von Hand tun kannst.</p>
-      <p><b>W&auml;rmer:</b> vier N&auml;gel rechts. Jede Kugel, die dorthin gelangt, wird weiter nach rechts geworfen &mdash; der ganze Berg wandert mit.</p>
-      <p><b>Mehr Extreme:</b> sechs N&auml;gel auf beiden Au&szlig;enseiten. Der Mittelwert bleibt, aber die Spitze sinkt und der Berg wird breiter.</p>
-    </div>
-    <div class="scenario-row" id="scenario-row">
-      <button class="scenario-btn active" data-scenario="normal">Normal&shy;klima</button>
-      <button class="scenario-btn" data-scenario="warm">W&auml;rmer</button>
-      <button class="scenario-btn" data-scenario="extreme">Mehr Extreme</button>
-    </div>
-
-    <div class="section-label with-help">
-      <span>N&auml;gel bearbeiten &mdash; tippen setzt oder entfernt</span>
-      <button type="button" class="info-dot" data-help="nail-help-text" aria-expanded="false" aria-controls="nail-help-text" aria-label="Erkl&auml;rung anzeigen">?</button>
-    </div>
-    <div class="help-pop" id="nail-help-text" hidden>
-      <p>Tippe auf eine <b>leere Stelle</b> im hellen Dreieck, um dort einen Nagel zu setzen. Tippe auf einen <b>vorhandenen Nagel</b>, um ihn wieder zu entfernen &mdash; ein und dieselbe Geste, kein Umschalten n&ouml;tig.</p>
-      <p>Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden.</p>
-      <p>Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; tippe mittig zwischen vier N&auml;gel (dort erscheint ein feiner Punkt als Platzhalter). So ein eingekeilter Nagel steht schr&auml;g im Weg: Jede Kugel, die ihn erreicht, prallt an ihm ab und wird eine Spalte nach au&szlig;en geworfen. Schon vier solche N&auml;gel verschieben den ganzen Berg sichtbar.</p>
-      <p>Nur im hellen Dreieck kommen &uuml;berhaupt Kugeln vorbei &mdash; nur dort wirken N&auml;gel.</p>
-      <p><b>Alle N&auml;gel entfernen</b> leert das ganze Brett auf einen Schlag &mdash; der Berg bleibt liegen, nur trifft jede weitere Kugel auf keinen einzigen Nagel mehr.</p>
-    </div>
-    <div class="seg-row" id="tool-row">
-      <button class="seg-btn tool-wipe" id="tool-wipe" type="button">Alle entfernen</button>
-    </div>
-
     <div class="stage-card">
       <div class="stage" id="stage">
         <canvas id="board-canvas"></canvas>
@@ -520,26 +482,43 @@
         <div class="stage-hint-badge attn" id="stage-hint">Tippe ins Brett, um N&auml;gel zu setzen oder zu entfernen</div>
         <div class="bin-tooltip" id="bin-tooltip" hidden></div>
       </div>
-      <div class="zoom-ctl">
-        <button type="button" id="zoom-out" aria-label="Brett verkleinern">&minus;</button>
-        <button type="button" id="zoom-reset" aria-label="Zoom zur&uuml;cksetzen" hidden>1&times;</button>
-        <button type="button" id="zoom-in" aria-label="Brett vergr&ouml;&szlig;ern, zum genauen Platzieren">&plus;</button>
-      </div>
     </div>
-    <div class="axis-note">S&auml;ulenh&ouml;he relativ zur h&ouml;chsten S&auml;ule, nicht absolut &mdash; tippe oder fahre &uuml;ber eine S&auml;ule f&uuml;r die genaue Zahl. Rote gestrichelte Linien: ab hier gilt ein Ergebnis als <b>extrem</b>.</div>
 
-    <div class="section-label with-help compare-label">
-      <span>Vergleichslinien</span>
+    <div class="compare-mini" id="compare-row">
+      <span class="compare-mini-label">Vergleich</span>
+      <button type="button" class="compare-chip" data-slot="0"><span class="compare-num">1</span></button>
+      <button type="button" class="compare-chip" data-slot="1"><span class="compare-num">2</span></button>
+      <button type="button" class="compare-chip" data-slot="2"><span class="compare-num">3</span></button>
       <button type="button" class="info-dot" data-help="compare-help" aria-expanded="false" aria-controls="compare-help" aria-label="Vergleichslinien erkl&auml;ren">?</button>
     </div>
     <div class="help-pop" id="compare-help" hidden>
       <p>Tippe auf eine leere Kachel, um die aktuelle Verteilung dort als gestrichelte Linie einzufrieren. Tippe auf eine belegte Kachel, um sie wieder zu l&ouml;schen.</p>
-      <p>So lassen sich bis zu drei Experimente &uuml;bereinander vergleichen &mdash; auch &uuml;ber einen Reset oder Szenariowechsel hinweg.</p>
+      <p>So lassen sich bis zu drei Experimente &uuml;bereinander vergleichen &mdash; auch &uuml;ber einen Reset oder Szenariowechsel hinweg. Beim Ber&uuml;hren einer S&auml;ule zeigt die Sprechblase auch die Werte aktiver Vergleichslinien.</p>
     </div>
-    <div class="compare-row" id="compare-row">
-      <button type="button" class="compare-chip" data-slot="0"><span class="compare-num">1</span></button>
-      <button type="button" class="compare-chip" data-slot="1"><span class="compare-num">2</span></button>
-      <button type="button" class="compare-chip" data-slot="2"><span class="compare-num">3</span></button>
+
+    <div class="axis-note">S&auml;ulenh&ouml;he relativ zur h&ouml;chsten S&auml;ule, nicht absolut &mdash; tippe oder fahre &uuml;ber eine S&auml;ule f&uuml;r die genaue Zahl. Rote gestrichelte Linien: ab hier gilt ein Ergebnis als <b>extrem</b>.</div>
+
+    <div class="board-opts" id="board-opts">
+      <div class="opt-row">
+        <button type="button" class="opt-btn" id="scenario-toggle" aria-expanded="false" aria-controls="scenario-panel">
+          <span id="scenario-toggle-label">Normalklima</span><span class="opt-caret">&#9662;</span>
+        </button>
+        <button type="button" class="opt-btn" id="tool-wipe">Alle entfernen</button>
+        <button type="button" class="info-dot" data-help="board-help" aria-expanded="false" aria-controls="board-help" aria-label="Erkl&auml;rung anzeigen">?</button>
+      </div>
+      <div class="scenario-panel" id="scenario-panel" hidden>
+        <div class="scenario-row" id="scenario-row">
+          <button class="scenario-btn active" data-scenario="normal">Normal&shy;klima</button>
+          <button class="scenario-btn" data-scenario="warm">W&auml;rmer</button>
+          <button class="scenario-btn" data-scenario="extreme">Mehr Extreme</button>
+        </div>
+      </div>
+      <div class="help-pop" id="board-help" hidden>
+        <p>Tippe auf eine <b>leere Stelle</b> im hellen Dreieck, um dort einen Nagel zu setzen. Tippe auf einen <b>vorhandenen Nagel</b>, um ihn wieder zu entfernen &mdash; ein und dieselbe Geste, kein Umschalten n&ouml;tig.</p>
+        <p>Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden. Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; dort erscheint ein feiner Punkt als Platzhalter &mdash; so ein eingekeilter Nagel wirft jede Kugel, die ihn erreicht, eine Spalte nach au&szlig;en. Nur im hellen Dreieck wirken N&auml;gel.</p>
+        <p><b>Alle N&auml;gel entfernen</b> leert das ganze Brett auf einen Schlag &mdash; der Berg bleibt liegen, nur trifft jede weitere Kugel auf keinen einzigen Nagel mehr.</p>
+        <p>Die <b>Szenarien</b> erfinden keine Statistik &mdash; sie keilen nur ein paar N&auml;gel zwischen die Reihen, genau wie von Hand. <b>W&auml;rmer</b> lehnt den Berg nach rechts; <b>Mehr Extreme</b> verbreitert ihn auf beiden Seiten, der Mittelwert bleibt.</p>
+      </div>
     </div>
 
     <div class="readout" id="readout">
@@ -574,7 +553,10 @@
       </button>
       <button id="sim-reset">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
-        <span><span>Reset</span></span>
+        <span>
+          <span>Reset</span>
+          <span class="sub">Nur die Kugeln</span>
+        </span>
       </button>
     </div>
     <div class="hint" id="hint">Ein einzelner Wurf sagt nichts. Erst viele Kugeln zeigen das Klima.</div>
@@ -602,9 +584,12 @@
         <button type="button" id="dev-theory">Theorie-Kurve: aus</button>
         <button type="button" id="dev-export">CSV exportieren</button>
       </div>
+      <div class="dev-row">
+        <button type="button" id="dev-abs-scale">S&auml;ulenh&ouml;he absolut: aus</button>
+      </div>
 
       <div class="dev-stats" id="dev-stats">&mdash;</div>
-      <div class="dev-note">Kugeln werden zugegeben, nicht ersetzt. Zeitraffer rechnet mehrere Simulationsschritte pro Bild &mdash; die Statistik bleibt identisch, nur die Wartezeit schrumpft. Theorie-Kurve rechnet die exakte Wahrscheinlichkeitsverteilung f&uuml;r das aktuelle Nagelbild aus (dieselbe Fallunterscheidung wie die Simulation, nur ohne Zufall) und zeigt sie gepunktet &mdash; ein guter Vergleich, ob echte L&auml;ufe zur Theorie passen.</div>
+      <div class="dev-note">Kugeln werden zugegeben, nicht ersetzt. Zeitraffer rechnet mehrere Simulationsschritte pro Bild &mdash; die Statistik bleibt identisch, nur die Wartezeit schrumpft; unter &times;1 l&auml;uft es nur an jedem n-ten Bild, statt mit kleineren Schritten zu rechnen &mdash; f&uuml;r Zeitlupe ohne andere Physik. Theorie-Kurve rechnet die exakte Wahrscheinlichkeitsverteilung f&uuml;r das aktuelle Nagelbild aus (dieselbe Fallunterscheidung wie die Simulation, nur ohne Zufall) und zeigt sie gepunktet. S&auml;ulenh&ouml;he absolut ersetzt die sonst &uuml;bliche Skalierung auf die aktuell h&ouml;chste S&auml;ule durch ein festes Ziel &mdash; die theoretische Spitze f&uuml;r die gerade angeforderte Kugelzahl &mdash; damit eine einzelne Kugel nicht mehr die ganze Spalte f&uuml;llt.</div>
     </div>
 
     <div class="explainer">
@@ -1024,9 +1009,28 @@
     return maxN;
   }
 
+  // The ceiling a column is measured against. Normally that is simply
+  // whichever bin currently holds the most balls (binMax) -- which is why
+  // one ball can fill a column solid, only for a second ball landing
+  // elsewhere to also fill solid, and a third stacking onto the first to
+  // suddenly halve both: the "full" mark keeps chasing whatever just
+  // landed. Dev mode's absolute-height toggle uses a fixed target instead
+  // -- the exact theoretical peak (computeTheory, no randomness) scaled to
+  // the size of the run actually queued -- so a column climbs smoothly
+  // towards its real, stable height as balls land, rather than lurching
+  // every time the current leader changes.
+  function currentColMax() {
+    if (!devOn || !devAbsoluteScale) return binMax();
+    var theory = computeTheory();
+    var peak = 0;
+    for (var i = 0; i < BINS; i++) peak = Math.max(peak, theory[i]);
+    var total = settled + toRelease + balls.length;
+    return Math.max(1, (peak / 100000) * total);
+  }
+
   // Height of the drawn histogram column of a bin, in unit space.
   function heapTop(bi) {
-    return 1 - COL_AVAIL * (bins[bi] / binMax());
+    return 1 - COL_AVAIL * Math.min(1, bins[bi] / currentColMax());
   }
 
   // Time to fall dy when starting downwards at vy0: solve
@@ -1443,12 +1447,15 @@
     // Settled balls are drawn as a histogram column per bin rather than as
     // a literal pile: the tallest bin always fills the bin area, so the
     // shape of the distribution reads the same for 20 or for 1200 balls.
-    var maxN = binMax();
+    // (Dev mode's absolute-height toggle changes what "fills the bin area"
+    // means -- see currentColMax -- but the drawing here does not need to
+    // know which; it just asks for the current ceiling.)
+    var maxN = currentColMax();
 
     for (var bi = 0; bi < BINS; bi++) {
       var n = bins[bi];
       if (n === 0) continue;
-      var frac = n / maxN;
+      var frac = Math.min(1, n / maxN);
       var colH = COL_AVAIL * frac;
       var x0 = EDGES[bi] * W + 2;
       var x1 = EDGES[bi + 1] * W - 2;
@@ -1496,18 +1503,27 @@
   // Draws a smoothed outline over a set of bin counts, normalised to its
   // own peak -- which is what makes two curves with different totals (a
   // batch of 365 against a dev-mode run of 5000) comparable by shape.
-  function strokeCurve(counts, color, width, dash) {
+  // maxOverride lets the live bins' curve share the exact ceiling the
+  // histogram columns beneath it are measured against (see
+  // currentColMax), so the line still traces the tops of the bars when
+  // that ceiling is not simply "whichever bin is currently tallest".
+  function strokeCurve(counts, color, width, dash, maxOverride) {
     var n = 0, i;
     for (i = 0; i < BINS; i++) n += counts[i];
     if (n < 12) return;
-    var maxN = 1;
-    for (i = 0; i < BINS; i++) maxN = Math.max(maxN, counts[i]);
+    var maxN;
+    if (maxOverride) {
+      maxN = maxOverride;
+    } else {
+      maxN = 1;
+      for (i = 0; i < BINS; i++) maxN = Math.max(maxN, counts[i]);
+    }
 
     var pts = [];
     for (var b = 0; b < BINS; b++) {
       var cx = (EDGES[b] + EDGES[b + 1]) / 2;
       // Same scale the histogram columns use, so the curve traces their tops.
-      var h = (counts[b] / maxN) * COL_AVAIL;
+      var h = Math.min(1, counts[b] / maxN) * COL_AVAIL;
       pts.push({ x: cx * W, y: (1 - h) * H });
     }
 
@@ -1533,7 +1549,7 @@
   var COMPARE_COLORS = ['#c65a2a', '#4a2e83', '#1093c4'];
 
   function drawCurve() {
-    strokeCurve(bins, '#28348f', 3);
+    strokeCurve(bins, '#28348f', 3, null, currentColMax());
     for (var s = 0; s < savedCurves.length; s++) {
       if (savedCurves[s]) strokeCurve(savedCurves[s], COMPARE_COLORS[s], 2.5, [7, 6]);
     }
@@ -1604,12 +1620,12 @@
   var devCollideBtn = document.getElementById('dev-collide');
   var devToggleLink = document.getElementById('dev-toggle');
   var scenarioRow = document.getElementById('scenario-row');
+  var scenarioToggleBtn = document.getElementById('scenario-toggle');
+  var scenarioToggleLabel = document.getElementById('scenario-toggle-label');
+  var scenarioPanel = document.getElementById('scenario-panel');
   var compareRow = document.getElementById('compare-row');
   var stageCard = document.querySelector('.stage-card');
   var binTooltip = document.getElementById('bin-tooltip');
-  var zoomInBtn = document.getElementById('zoom-in');
-  var zoomOutBtn = document.getElementById('zoom-out');
-  var zoomResetBtn = document.getElementById('zoom-reset');
   var hint = document.getElementById('hint');
 
   var ICON_PLAY = '<path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/>';
@@ -1700,7 +1716,9 @@
   // ============ BIN TOOLTIP ============
   // Hovering (mouse) or touching a histogram column shows exactly how many
   // balls landed there -- the one number the bars' relative heights alone
-  // cannot give away.
+  // cannot give away -- plus the same count for every active comparison
+  // line, colour-matched to its tile, so a hover compares them directly
+  // instead of just eyeballing curve heights against each other.
   var tooltipHideT = null;
   var lastHoverPt = null;
 
@@ -1709,10 +1727,20 @@
     if (!pt || pt.y < BIN_TOP || pt.x < 0 || pt.x > 1) { hideBinTooltip(); return; }
     var bi = binIndex(pt.x);
     var n = bins[bi];
-    if (!n) { hideBinTooltip(); return; }
+
+    var lines = [];
+    if (n) lines.push('<b>' + n + (n === 1 ? ' Kugel' : ' Kugeln') + '</b>');
+    for (var s = 0; s < savedCurves.length; s++) {
+      if (!savedCurves[s]) continue;
+      var v = savedCurves[s][bi];
+      if (!v) continue;
+      lines.push('<span class="tt-dot" style="background:' + COMPARE_COLORS[s] + '"></span>' + v);
+    }
+    if (!lines.length) { hideBinTooltip(); return; }
+
     if (tooltipHideT) { clearTimeout(tooltipHideT); tooltipHideT = null; }
     var cx = (EDGES[bi] + EDGES[bi + 1]) / 2;
-    binTooltip.textContent = n + (n === 1 ? ' Kugel' : ' Kugeln');
+    binTooltip.innerHTML = lines.join('<br>');
     binTooltip.style.left = (cx * 100) + '%';
     binTooltip.style.top = (heapTop(bi) * 100) + '%';
     binTooltip.hidden = false;
@@ -1729,13 +1757,15 @@
   }
 
   // ============ ZOOM / PAN ============
-  // A visual aid for placing a nail precisely: the board never moves in
-  // unit space, only how much of it is shown. Implemented as a CSS
-  // transform on .stage itself -- getBoundingClientRect() already reports
-  // the transformed size (see localPoint above), so every hit test below
-  // keeps working with no inverse-transform math of its own, and the
-  // canvases resize to the zoomed-in resolution (via layout()) so the
-  // result stays crisp rather than a stretched blur.
+  // A visual aid for placing a nail precisely: pinch to zoom in, drag to
+  // pan. No on-screen +/- buttons -- two-finger zoom is a gesture people
+  // already know, and there is no touchscreen to pinch on desktop anyway,
+  // so a button row would only have been chrome nobody used there.
+  // Implemented as a CSS transform on .stage itself -- getBoundingClientRect()
+  // already reports the transformed size (see localPoint above), so every
+  // hit test below keeps working with no inverse-transform math of its
+  // own, and the canvases resize to the zoomed-in resolution (via layout())
+  // so the result stays crisp rather than a stretched blur.
   var ZOOM_MIN = 1, ZOOM_MAX = 3.5;
   var zoom = 1, panX = 0, panY = 0;
 
@@ -1752,40 +1782,21 @@
       ('translate(' + panX.toFixed(1) + 'px,' + panY.toFixed(1) + 'px) scale(' + zoom.toFixed(3) + ')');
   }
 
-  function updateZoomUI() {
-    zoomOutBtn.disabled = zoom <= ZOOM_MIN + 0.01;
-    zoomInBtn.disabled = zoom >= ZOOM_MAX - 0.01;
-    zoomResetBtn.hidden = zoom <= 1.01;
-  }
-
   // The heavier step: resizes the canvas backing buffers to match the new
   // on-screen (zoomed) size and redraws. Skipped on every pointermove of a
   // pinch or drag -- applyZoomTransform() alone keeps that smooth -- and
   // only run once the gesture settles, so resizing a canvas mid-gesture
-  // never fights the frame that is drawing to it.
+  // never fights the frame that is drawing to it. Pinching back down close
+  // to the original size snaps the rest of the way to it, since there is
+  // no reset button to fall back on any more.
   function finishZoomChange() {
+    if (zoom <= 1.02) { zoom = 1; panX = 0; panY = 0; }
     clampPan();
     applyZoomTransform();
     layout();
     drawBoard();
     drawBalls();
-    updateZoomUI();
   }
-
-  function setZoom(z) {
-    zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
-    if (zoom <= 1.001) { zoom = 1; panX = 0; panY = 0; }
-    finishZoomChange();
-  }
-
-  zoomInBtn.addEventListener('click', function () { setZoom(zoom * 1.6); });
-  zoomOutBtn.addEventListener('click', function () { setZoom(zoom / 1.6); });
-  zoomResetBtn.addEventListener('click', function () { setZoom(1); });
-
-  stage.addEventListener('wheel', function (ev) {
-    ev.preventDefault();
-    setZoom(zoom * (ev.deltaY < 0 ? 1.12 : 1 / 1.12));
-  }, { passive: false });
 
   // ============ POINTER HANDLING ============
   // One gesture model covers three different things depending on where it
@@ -1908,6 +1919,12 @@
   });
 
   var scenarioBtns = Array.prototype.slice.call(scenarioRow.querySelectorAll('.scenario-btn'));
+  var SCENARIO_LABELS = { normal: 'Normalklima', warm: 'Wärmer', extreme: 'Mehr Extreme' };
+
+  function setScenarioPanelOpen(open) {
+    scenarioPanel.hidden = !open;
+    scenarioToggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
 
   function setScenario(name) {
     // A preset swaps the whole board, so the heap is cleared: the point of
@@ -1917,6 +1934,8 @@
     scenarioBtns.forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-scenario') === name);
     });
+    scenarioToggleLabel.textContent = SCENARIO_LABELS[name];
+    setScenarioPanelOpen(false);
     clearBalls();
     drawBoard();
     drawBalls();
@@ -1927,6 +1946,7 @@
 
   function markCustomScenario() {
     scenarioBtns.forEach(function (b) { b.classList.remove('active'); });
+    scenarioToggleLabel.textContent = 'Angepasst';
   }
 
   scenarioBtns.forEach(function (b) {
@@ -1934,6 +1954,10 @@
       setScenario(b.getAttribute('data-scenario'));
       dismissHint();
     });
+  });
+
+  scenarioToggleBtn.addEventListener('click', function () {
+    setScenarioPanelOpen(scenarioPanel.hidden);
   });
 
   // ============ BALL COUNT ============
@@ -2006,7 +2030,8 @@
   var devOn = false;
   var timeScale = 1;
   var devTheory = false;
-  var SPEEDS = [1, 2, 4, 8];
+  var devAbsoluteScale = false;
+  var SPEEDS = [0.25, 0.5, 1, 2, 4, 8];
   var DEV_KEY = 'scapeDevMode';
 
   function devWanted() {
@@ -2066,6 +2091,14 @@
     });
 
     document.getElementById('dev-export').addEventListener('click', exportCSV);
+
+    var devAbsBtn = document.getElementById('dev-abs-scale');
+    devAbsBtn.addEventListener('click', function () {
+      devAbsoluteScale = !devAbsoluteScale;
+      devAbsBtn.textContent = 'Säulenhöhe absolut: ' + (devAbsoluteScale ? 'an' : 'aus');
+      devAbsBtn.classList.toggle('on', devAbsoluteScale);
+      drawBalls();
+    });
 
     devSpeedBtn.addEventListener('click', function () {
       var i = SPEEDS.indexOf(timeScale);
@@ -2175,22 +2208,21 @@
 
   singleBtn.addEventListener('click', dropSingle);
 
+  // Reset only clears the heap of settled and in-flight balls -- the pins
+  // and whatever scenario is active stay exactly as a visitor left them.
+  // Comparison lines survive it too, deliberately: clearing the current
+  // run to try again against a frozen reference is the whole point.
   resetBtn.addEventListener('click', function () {
-    pins = defaultPins();
-    scenarioBtns.forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-scenario') === 'normal');
-    });
     clearBalls();
     setMode(IDLE);
-    drawBoard();
     drawBalls();
     updateReadout();
-    updateHint();
   });
 
   // ============ ANIMATION LOOP ============
   var lastT = 0;
   var fps = 0;
+  var simCredit = 0;   // fractional ticks banked between frames, for slow motion
 
   function simTick(dt) {
     // Release queued balls at a steady rate. The timer is deliberately not
@@ -2243,10 +2275,17 @@
 
     if (mode !== RUNNING) return;
 
-    // timeScale is 1 for visitors; dev mode raises it to run several
-    // simulation ticks per frame, which shortens the wait without touching
-    // the physics -- each tick is exactly the tick everyone else gets.
-    for (var rep = 0; rep < timeScale; rep++) simTick(dt);
+    // timeScale is 1 for visitors; dev mode can raise or lower it. Above 1
+    // that means several full ticks per frame (each tick is exactly the
+    // tick everyone else gets, just more of them land in the same
+    // rendered frame); below 1 it means fewer frames get a tick at all --
+    // a credit accumulates by timeScale every frame and a tick only fires
+    // once it reaches a whole one, so 0.25x ticks once every four frames
+    // rather than running a quarter of a tick, which would need a smaller
+    // dt and so would not be the same physics slowed down, just different
+    // physics. Either way every tick that does happen is identical.
+    simCredit += timeScale;
+    while (simCredit >= 1) { simTick(dt); simCredit -= 1; }
 
     drawBalls();
     updateReadout();
