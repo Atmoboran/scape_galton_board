@@ -381,6 +381,29 @@
   }
   .scenario-btn.active{ background:var(--ink); color:var(--paper); }
 
+  /* ============ DROP POINT ============ */
+  /* Same compact stepper as the ball count, for the same reason: a
+     full-width slider here would sit right in the path of a scrolling
+     thumb. Its own row under the scenario button, because the drop point
+     and the climate state are two independent knobs that combine. */
+  .drop-row{ display:flex; align-items:center; gap:6px; margin-bottom:10px; }
+  .drop-label{
+    font-size:9px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    margin-right:2px;
+  }
+  .drop-row b{
+    min-width:52px; text-align:center;
+    font-size:12px; font-weight:800; font-variant-numeric:tabular-nums;
+  }
+  .drop-row > button:not(.info-dot){
+    flex:none; width:26px; height:26px; border:2px solid var(--ink);
+    background:var(--paper); color:var(--ink); font-family:inherit;
+    font-weight:800; font-size:13px; line-height:1; cursor:pointer; padding:0;
+  }
+  .drop-row > button:not(.info-dot):active{ background:var(--ink); color:var(--paper); }
+  .drop-row > button:not(.info-dot):disabled{ opacity:.35; cursor:default; }
+  .drop-row .info-dot{ margin-left:auto; }
+
   /* ============ FIGURE (distribution diagrams) ============ */
   .figure{
     border:2px solid var(--ink); background:var(--cream);
@@ -423,6 +446,7 @@
   :root[data-view="desktop"] .compare-mini,
   :root[data-view="desktop"] .board-opts,
   :root[data-view="desktop"] .scenario-row,
+  :root[data-view="desktop"] .drop-row,
   :root[data-view="desktop"] .dev-panel,
   :root[data-view="desktop"] .help-pop,
   :root[data-view="desktop"] .hint{ max-width:470px; margin-left:auto; margin-right:auto; }
@@ -496,7 +520,7 @@
       <p>So lassen sich bis zu drei Experimente &uuml;bereinander vergleichen &mdash; auch &uuml;ber einen Reset oder Szenariowechsel hinweg. Beim Ber&uuml;hren einer S&auml;ule zeigt die Sprechblase auch die Werte aktiver Vergleichslinien.</p>
     </div>
 
-    <div class="axis-note">S&auml;ulenh&ouml;he relativ zur h&ouml;chsten S&auml;ule, nicht absolut &mdash; tippe oder fahre &uuml;ber eine S&auml;ule f&uuml;r die genaue Zahl. Rote gestrichelte Linien: ab hier gilt ein Ergebnis als <b>extrem</b>.</div>
+    <div class="axis-note" id="axis-note"></div>
 
     <div class="board-opts" id="board-opts">
       <div class="opt-row">
@@ -509,15 +533,26 @@
       <div class="scenario-panel" id="scenario-panel" hidden>
         <div class="scenario-row" id="scenario-row">
           <button class="scenario-btn active" data-scenario="normal">Normal&shy;klima</button>
-          <button class="scenario-btn" data-scenario="warm">W&auml;rmer</button>
-          <button class="scenario-btn" data-scenario="extreme">Mehr Extreme</button>
+          <button class="scenario-btn" data-scenario="extrem">Extrem&shy;klima</button>
         </div>
+      </div>
+      <div class="drop-row">
+        <span class="drop-label">Einwurf</span>
+        <button type="button" id="drop-left" aria-label="Einwurf nach links">&minus;</button>
+        <b id="drop-value">Mitte</b>
+        <button type="button" id="drop-right" aria-label="Einwurf nach rechts">&plus;</button>
+        <button type="button" class="info-dot" data-help="drop-help" aria-expanded="false" aria-controls="drop-help" aria-label="Einwurf erkl&auml;ren">?</button>
+      </div>
+      <div class="help-pop" id="drop-help" hidden>
+        <p>Verschiebt die Stelle, an der die Kugeln ins Brett fallen. Der ganze Berg wandert eins zu eins mit: ein halbes Feld nach rechts eingeworfen hei&szlig;t ein halbes Feld w&auml;rmerer Mittelwert &mdash; die <b>Verschiebung des Mittels</b>.</p>
+        <p>Das l&auml;sst sich mit <b>Extremklima</b> kombinieren: verschobener Mittelwert <i>und</i> gr&ouml;&szlig;ere Streuung zugleich, so wie es echte Messreihen zeigen.</p>
+        <p>Weit au&szlig;en f&auml;llt eine Kugel erst ein paar Reihen weit, bevor das Dreieck breit genug ist, sie zu fangen &mdash; diese Reihen fehlen ihr als Entscheidungen, die Streuung wird dadurch etwas kleiner. Der Mittelwert bleibt exakt.</p>
       </div>
       <div class="help-pop" id="board-help" hidden>
         <p>Tippe auf eine <b>leere Stelle</b> im hellen Dreieck, um dort einen Nagel zu setzen. Tippe auf einen <b>vorhandenen Nagel</b>, um ihn wieder zu entfernen &mdash; ein und dieselbe Geste, kein Umschalten n&ouml;tig.</p>
         <p>Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden. Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; dort erscheint ein feiner Punkt als Platzhalter &mdash; so ein eingekeilter Nagel wirft jede Kugel, die ihn erreicht, eine Spalte nach au&szlig;en. Nur im hellen Dreieck wirken N&auml;gel.</p>
         <p><b>Alle N&auml;gel entfernen</b> leert das ganze Brett auf einen Schlag &mdash; der Berg bleibt liegen, nur trifft jede weitere Kugel auf keinen einzigen Nagel mehr.</p>
-        <p>Die <b>Szenarien</b> erfinden keine Statistik &mdash; sie keilen nur ein paar N&auml;gel zwischen die Reihen, genau wie von Hand. <b>W&auml;rmer</b> lehnt den Berg nach rechts; <b>Mehr Extreme</b> verbreitert ihn auf beiden Seiten, der Mittelwert bleibt.</p>
+        <p><b>Normalklima</b> ist das volle Dreieck: jede Reihe besetzt, jede Kugel entscheidet zw&ouml;lfmal neu. <b>Extremklima</b> l&auml;sst vier Reihen leer &mdash; weniger N&auml;gel, nicht mehr. Klingt verkehrt, ist aber der Punkt: ein Nagel w&uuml;rfelt neu, eine L&uuml;cke nicht. Wer durch eine leere Reihe f&auml;llt, beh&auml;lt einfach die Richtung von vorher, und solche mitgeschleppten Schritte addieren sich, statt sich auszugleichen. Ergebnis: gleicher Mittelwert, rund 30&nbsp;% mehr Streuung, sechsmal so viele Extreme &mdash; die <b>Zunahme der Streuung</b>.</p>
       </div>
     </div>
 
@@ -585,11 +620,22 @@
         <button type="button" id="dev-export">CSV exportieren</button>
       </div>
       <div class="dev-row">
-        <button type="button" id="dev-abs-scale">S&auml;ulenh&ouml;he absolut: aus</button>
+        <button type="button" id="dev-scale">Y-Achse: Anteil der h&ouml;chsten S&auml;ule</button>
+      </div>
+      <div class="dev-row">
+        <button type="button" id="dev-pace">Abstand: automatisch</button>
+        <button type="button" id="dev-cap">Max. gleichzeitig: ohne</button>
       </div>
 
       <div class="dev-stats" id="dev-stats">&mdash;</div>
-      <div class="dev-note">Kugeln werden zugegeben, nicht ersetzt. Zeitraffer rechnet mehrere Simulationsschritte pro Bild &mdash; die Statistik bleibt identisch, nur die Wartezeit schrumpft; unter &times;1 l&auml;uft es nur an jedem n-ten Bild, statt mit kleineren Schritten zu rechnen &mdash; f&uuml;r Zeitlupe ohne andere Physik. Theorie-Kurve rechnet die exakte Wahrscheinlichkeitsverteilung f&uuml;r das aktuelle Nagelbild aus (dieselbe Fallunterscheidung wie die Simulation, nur ohne Zufall) und zeigt sie gepunktet. S&auml;ulenh&ouml;he absolut ersetzt die sonst &uuml;bliche Skalierung auf die aktuell h&ouml;chste S&auml;ule durch ein festes Ziel &mdash; die theoretische Spitze f&uuml;r die gerade angeforderte Kugelzahl &mdash; damit eine einzelne Kugel nicht mehr die ganze Spalte f&uuml;llt.</div>
+      <div class="dev-note"><b>Y-Achse</b> schaltet zwischen vier Lesarten der S&auml;ulenh&ouml;he durch &mdash; die Bildunterschrift unter dem Brett sagt jeweils, worauf sich die H&ouml;he bezieht:
+        <i>Anteil der h&ouml;chsten S&auml;ule</i> (bisheriger Standard, f&uuml;llt immer das Bild, aber der Ma&szlig;stab wandert mit, sobald eine andere S&auml;ule die h&ouml;chste wird);
+        <i>Anteil aller Kugeln</i> (volle H&ouml;he = 30&nbsp;% aller gefallenen Kugeln &mdash; genau die Wahrscheinlichkeitsverteilung, steht nach rund hundert Kugeln still);
+        <i>Anteil der erwarteten Spitze</i> (Ziel ist die exakt berechnete Spitze des angeforderten Laufs);
+        <i>Kugeln je S&auml;ule</i> (volle H&ouml;he = 100 Kugeln, v&ouml;llig starr).
+        <b>Abstand</b> und <b>Max. gleichzeitig</b> entzerren gro&szlig;e Sch&uuml;be: der eine bremst den Nachschub, der andere l&auml;sst erst nachrutschen, wenn wieder Platz ist &mdash; beides gilt auch f&uuml;r +1000/+5000.
+        <b>Zeitraffer</b> rechnet mehrere Simulationsschritte pro Bild; unter &times;1 l&auml;uft es nur an jedem n-ten Bild, statt mit kleineren Schritten zu rechnen &mdash; Zeitlupe ohne andere Physik.
+        <b>Theorie-Kurve</b> rechnet die exakte Wahrscheinlichkeitsverteilung f&uuml;r das aktuelle Nagelbild aus und zeigt sie gepunktet.</div>
     </div>
 
     <div class="explainer">
@@ -655,6 +701,9 @@
         </svg>
         <figcaption><b>Am Rand wird aus wenig sehr viel.</b> Eine kleine Verschiebung des Mittels vervielfacht die F&auml;lle jenseits der Schwelle &mdash; weil die Glockenkurve dort steil abf&auml;llt. Aus einem &bdquo;Jahrhundertsommer&ldquo; wird so binnen Jahrzehnten ein Ereignis, das mehrfach pro Generation auftritt.</figcaption>
       </figure>
+          <p class="blurb">
+            Alle drei Effekte lassen sich am Brett selbst nachstellen. Der <b>Einwurf</b> unter dem Brett verschiebt die Stelle, an der die Kugeln hineinfallen &mdash; der ganze Berg wandert mit, das ist Effekt&nbsp;1. <b>Extremklima</b> l&auml;sst vier Nagelreihen leer: wer durch eine L&uuml;cke f&auml;llt, beh&auml;lt seine Richtung, statt neu zu w&uuml;rfeln, und solche mitgeschleppten Schritte summieren sich zu gr&ouml;&szlig;eren Ausschl&auml;gen &mdash; gleicher Mittelwert, breiterer Berg, Effekt&nbsp;2. Beide zusammen ergeben Effekt&nbsp;3: schon ein halbes Feld Verschiebung plus die gr&ouml;&szlig;ere Streuung vervielfacht die Kugeln jenseits der roten Linien.
+          </p>
         </div>
       </details>
 
@@ -814,38 +863,43 @@
     return p;
   }
 
-  // A preset is expressed the way a visitor edits the board: by putting
-  // extra nails in. A nail wedged into a gap is met off-centre, so it does
-  // not split the flow evenly -- it tends to send the ball onward in the
-  // direction it was already travelling. Placing such nails on one flank
-  // therefore leans the whole distribution that way, and placing them on
-  // both flanks widens it without moving the mean.
-  // A preset is expressed the way a visitor edits the board: by wedging a
-  // few extra nails between the rows. Every one of them deflects every
-  // ball that reaches it, so a handful is enough -- four for a warmer
-  // climate, six for a wilder one.
+  // ============ THE TWO CLIMATES ============
+  // Normalklima is the classic full triangle: every row of nails present,
+  // every ball re-deciding left/right twelve times, which is exactly what
+  // makes it binomial (sigma = sqrt(12)/2 = 1.73 columns).
   //
-  // They are kept well inside the triangle. A ball thrown outward from its
-  // edge would miss the rows below and land between two bins, which shows
-  // up as a comb of half-empty columns.
+  // Extremklima leaves rows 2, 5, 8 and 11 empty. That is the opposite of
+  // what intuition suggests -- *fewer* nails, not more -- and it is worth
+  // spelling out why it widens the spread rather than narrowing it. A nail
+  // re-rolls the dice: it sends the ball left or right with a fresh coin,
+  // independent of how it arrived, and independent steps are what keep a
+  // binomial narrow (they cancel each other out). A gap does not re-roll
+  // anything: a ball crossing an empty row simply keeps going the way it
+  // was already going. Those carried-over steps are correlated rather than
+  // independent, and correlated steps add up instead of cancelling -- so
+  // the mountain gets wider and flatter, with the same mean.
+  //
+  // Measured exactly (not sampled), at the centre drop point:
+  //   Normalklima  sigma 1.73   peak bin 22.6%   outer bins 0.6%
+  //   Extremklima  sigma 2.24   peak bin 17.2%   outer bins 3.9%
+  // i.e. 30% more spread, a visibly lower peak, and six times as many
+  // extremes -- the "Zunahme der Streuung" figure, mean untouched.
+  //
+  // Which four rows matters more than how many. Dropping every *second*
+  // row looks tidier but leaves only odd-numbered half-columns reachable,
+  // so a ball entering on an even one (any whole-column drop offset) meets
+  // nothing at all and falls straight through -- the distribution collapses
+  // onto a single bin. Rows 2/5/8/11 keep both parities represented, so the
+  // board stays well behaved at every drop point.
+  var EXTREME_EMPTY_ROWS = [2, 5, 8, 11];
+
   function scenarioPins(name) {
     var p = defaultPins();
-    if (name === 'normal') return p;
+    if (name !== 'extrem') return p;
 
-    var warm = (name === 'warm');
-    var levels = warm ? [13, 15] : [9, 11];
-    var minH = warm ? 2 : 1;
-
-    for (var i = 0; i < levels.length; i++) {
-      var q = levels[i];
-      var r = levelReach(q);
-      for (var h = -r; h <= r; h += 2) {
-        // Warm leans the board one way; extreme opens both flanks.
-        if (warm ? h <= minH : Math.abs(h) <= minH) continue;
-        // Keep the throw inside the triangle of the row below.
-        if (Math.abs(h) + 2 > (q >> 1) + 1) continue;
-        p[q][h + HOFF] = true;
-      }
+    for (var i = 0; i < EXTREME_EMPTY_ROWS.length; i++) {
+      var q = EXTREME_EMPTY_ROWS[i] * 2;      // row r lives on level 2r
+      for (var j = 0; j < HSPAN; j++) p[q][j] = false;
     }
     return p;
   }
@@ -970,6 +1024,44 @@
   var FEED_H = 0.030;       // vertical scatter of the spawn height
   var FIRST_Y = TOP_Y - PIN_R - BALL_R;   // where the apex nail is met
 
+  // ============ DROP POINT ============
+  // Where the feed enters the board, in half-columns from the middle. The
+  // mean of the finished distribution follows it one-for-one: entering two
+  // half-columns to the right moves the whole mountain one bin right, which
+  // is the "Verschiebung des Mittels" figure, and it works on top of
+  // whichever climate the nails are set to.
+  //
+  // The slider is finer than the lattice, so a ball cannot simply start on
+  // "2.5 half-columns" -- there is no such slot. Instead each ball starts on
+  // one of the two neighbouring slots, chosen so that the *average* start is
+  // exactly where the slider points. The rounding adds at most 0.25
+  // half-columns of variance, against a binomial 12, so it is invisible in
+  // the result while keeping the mean exact.
+  //
+  // One honest side effect: the triangle has no margin above its flanks, so
+  // a ball entering off-centre falls past the first few rows before the
+  // triangle is wide enough to catch it, and those rows are decisions it
+  // never makes. Measured exactly: at +1 column sigma goes 1.73 -> 1.58, at
+  // +2 columns 1.73 -> 1.41. The mean stays exact throughout. Widening the
+  // triangle to compensate was tried and is worse: the extra nails let balls
+  // escape past the far flank, which piles them into the end bin and turns
+  // the curve two-humped.
+  var DROP_MAX = 4;         // half-columns either way (= 2 whole columns)
+  var DROP_STEP = 0.5;      // half-columns per tap of the stepper
+  var dropOffset = 0;       // in half-columns; 0 = the apex
+
+  // x of the drop point in unit space, used by the feed and by the funnel.
+  function dropX() { return halfX(0, dropOffset); }
+
+  // The lattice slot a ball actually starts on: the slider's position
+  // rounded to a whole slot, up or down, with the probability that makes
+  // the average come out exactly on the slider.
+  function dropSlot() {
+    var lo = Math.floor(dropOffset);
+    var frac = dropOffset - lo;
+    return (frac > 0 && Math.random() < frac) ? lo + 1 : lo;
+  }
+
   function spawnBall() {
     // h = the ball's position in half-columns, advanced level by level.
     // Tracking it directly is what makes the board exactly binomial.
@@ -980,20 +1072,22 @@
     // down as one horizontal front. Each ball now gets its own place in the
     // funnel mouth and its own drop speed, and the sideways speed is chosen
     // so that every one of them still arrives exactly at the apex.
-    var x0 = 0.5 + (Math.random() - 0.5) * FEED_W;
+    var h0 = dropSlot();
+    var entry = halfX(0, h0);
+    var x0 = entry + (Math.random() - 0.5) * FEED_W;
     var y0 = FEED_TOP + Math.random() * FEED_H;
     var vy0 = 0.10 + Math.random() * 0.05;
 
     balls.push({
       x: x0,
       y: y0,
-      vx: (0.5 - x0) / fallTime(vy0, Math.max(0.001, FIRST_Y - y0)),
+      vx: (entry - x0) / fallTime(vy0, Math.max(0.001, FIRST_Y - y0)),
       vy: vy0,
-      h: 0,
+      h: h0,
       dir: 0,
       hop: true,
       nextRow: 0,
-      lastTarget: 0.5,
+      lastTarget: entry,
       settled: false
     });
   }
@@ -1009,23 +1103,66 @@
     return maxN;
   }
 
-  // The ceiling a column is measured against. Normally that is simply
-  // whichever bin currently holds the most balls (binMax) -- which is why
-  // one ball can fill a column solid, only for a second ball landing
-  // elsewhere to also fill solid, and a third stacking onto the first to
-  // suddenly halve both: the "full" mark keeps chasing whatever just
-  // landed. Dev mode's absolute-height toggle uses a fixed target instead
-  // -- the exact theoretical peak (computeTheory, no randomness) scaled to
-  // the size of the run actually queued -- so a column climbs smoothly
-  // towards its real, stable height as balls land, rather than lurching
-  // every time the current leader changes.
+  // ============ WHAT THE Y-AXIS MEANS ============
+  // Four ways to answer "how tall is a column", selectable in dev mode so
+  // the right one can be picked by looking at it rather than by argument.
+  // Every one of them answers a different question:
+  //
+  //  'peak'   Share of the tallest column. The shipped default. Always
+  //           fills the frame, so a 20-ball run and a 5000-ball run read
+  //           the same -- but the yardstick is whatever bin is currently
+  //           winning, so it moves under you: one ball fills a column
+  //           solid, a second elsewhere does too, and a third stacking on
+  //           the first halves both. This is the "it keeps switching"
+  //           the brief complains about, and it is inherent to the mode.
+  //  'share'  Share of all balls that landed, against a fixed ceiling of
+  //           SHARE_FULL. This is literally the probability distribution
+  //           the exhibit is about, it settles after a hundred balls or so
+  //           and then stops moving no matter how many more fall, and the
+  //           number has a plain-language meaning ("6% of all balls").
+  //  'run'    Against the exact theoretical peak for the run that is
+  //           queued. Stable within a run, but jumps when the next Start
+  //           changes the run size.
+  //  'fixed'  Against a fixed number of balls per column (FIXED_FULL).
+  //           Never moves at all; a column is simply a ball count. Small
+  //           runs stay tiny, big runs peg at the ceiling.
+  var SCALE_MODES = ['peak', 'share', 'run', 'fixed'];
+  var SCALE_LABELS = {
+    peak: 'Anteil der höchsten Säule',
+    share: 'Anteil aller Kugeln',
+    run: 'Anteil der erwarteten Spitze',
+    fixed: 'Kugeln je Säule'
+  };
+  var scaleMode = 'peak';
+  var SHARE_FULL = 0.30;    // 30% of all balls = a full column
+  var FIXED_FULL = 100;     // 100 balls = a full column
+
+  // The ceiling a column is measured against, in *ball counts*, so the
+  // histogram, the curve tracing its tops and the tooltip all agree.
   function currentColMax() {
-    if (!devOn || !devAbsoluteScale) return binMax();
-    var theory = computeTheory();
-    var peak = 0;
-    for (var i = 0; i < BINS; i++) peak = Math.max(peak, theory[i]);
-    var total = settled + toRelease + balls.length;
-    return Math.max(1, (peak / 100000) * total);
+    var i, peak, total;
+    if (scaleMode === 'share') {
+      total = 0;
+      for (i = 0; i < BINS; i++) total += bins[i];
+      return Math.max(1, total * SHARE_FULL);
+    }
+    if (scaleMode === 'fixed') return FIXED_FULL;
+    if (scaleMode === 'run') {
+      var theory = computeTheory();
+      peak = 0;
+      for (i = 0; i < BINS; i++) peak = Math.max(peak, theory[i]);
+      total = settled + toRelease + balls.length;
+      return Math.max(1, (peak / 100000) * total);
+    }
+    return binMax();
+  }
+
+  // What the top of the bin area stands for, spelled out for the caption.
+  function scaleCeilingText() {
+    if (scaleMode === 'share') return Math.round(SHARE_FULL * 100) + ' % aller Kugeln';
+    if (scaleMode === 'fixed') return FIXED_FULL + ' Kugeln';
+    if (scaleMode === 'run') return 'die erwartete Spitze des Laufs';
+    return 'die aktuell höchste Säule';
   }
 
   // Height of the drawn histogram column of a bin, in unit space.
@@ -1067,7 +1204,22 @@
       var cap = COL_DX * 0.35;
       if (off > cap) off = cap; else if (off < -cap) off = -cap;
       b.x = lat + off * 0.5;
-      b.y = levelY(q) - PIN_R - BALL_R * 0.5;
+
+      // The height is eased the same way, and for a sharper reason: it used
+      // to be hard-set to the level. Two balls crossing the same level in
+      // the same column were therefore both teleported onto the *same*
+      // point, perfectly overlapping. Contact then had to prise them apart
+      // from zero distance, which takes several frames and looks exactly
+      // like two balls glued together -- and when the next level finally
+      // handed one of them a fresh sideways speed, it shot off, which is
+      // the "sudden jump" half of the same bug. Easing keeps whatever
+      // vertical gap contact has already opened up, so a column of balls
+      // queues instead of collapsing.
+      var latY = levelY(q) - PIN_R - BALL_R * 0.5;
+      var offY = b.y - latY;
+      var capY = BALL_R * 2.5;
+      if (offY > capY) offY = capY; else if (offY < -capY) offY = -capY;
+      b.y = latY + offY * 0.5;
 
       var nail = pinAt(q, b.h);
 
@@ -1165,8 +1317,14 @@
   // per frame (passes x iters) is unchanged, only its rhythm is smoother.
   // COLL_STIFF and COLL_BOUNCE both came down too, trading a touch of
   // "instant" separation for calmer, less springy-looking contact.
-  var COLL_STIFF = 0.35;     // share of the overlap taken out per iteration
-  var COLL_BOUNCE = 0.12;    // share of the closing speed given back
+  // Separation is now nearly complete in a single pass (0.9 of the overlap)
+  // and gives nothing back as bounce. The earlier soft-and-springy setting
+  // was an attempt to cure jumpiness by damping the symptom; the cause was
+  // the hard height reset above, and with that fixed, resolving contact
+  // promptly is what actually looks calm. A bounce term only injects energy
+  // into a crowd that has nowhere to go, so it is off.
+  var COLL_STIFF = 0.9;      // share of the overlap taken out per iteration
+  var COLL_BOUNCE = 0;       // share of the closing speed given back
   var COLL_ITERS = 1;
   var COLL_DAMP = 0.985;     // per-substep bleed-off of sideways jitter
   var VX_MAX = 0.5, VY_MIN = -0.4;
@@ -1198,7 +1356,10 @@
     var d2 = dx * dx + dy * dy;
     var D = BALL_R * 2;
     if (d2 >= D * D) return;
-    if (d2 < 1e-12) { a.x -= 0.0004; b.x += 0.0004; return; }
+    // Exactly coincident: nudge them apart *vertically*, along the flow.
+    // A sideways nudge would be undone by the lattice at the next level,
+    // leaving the pair stuck together; a vertical one survives it.
+    if (d2 < 1e-12) { a.y -= 0.0006; b.y += 0.0006; return; }
 
     var d = Math.sqrt(d2);
     var nx = dx / d, ny = dy / d;
@@ -1331,10 +1492,13 @@
     // --- funnel ---
     boardCtx.fillStyle = INK;
     boardCtx.beginPath();
+    // The mouth leans towards wherever the balls actually enter, so the
+    // drop point has a visible cause on the board and not just a number.
+    var mouth = dropX();
     boardCtx.moveTo(0.10 * W, 0);
     boardCtx.lineTo(0.90 * W, 0);
-    boardCtx.lineTo(0.565 * W, 0.075 * H);
-    boardCtx.lineTo(0.435 * W, 0.075 * H);
+    boardCtx.lineTo((mouth + 0.065) * W, 0.075 * H);
+    boardCtx.lineTo((mouth - 0.065) * W, 0.075 * H);
     boardCtx.closePath();
     boardCtx.fill();
 
@@ -1919,7 +2083,7 @@
   });
 
   var scenarioBtns = Array.prototype.slice.call(scenarioRow.querySelectorAll('.scenario-btn'));
-  var SCENARIO_LABELS = { normal: 'Normalklima', warm: 'Wärmer', extreme: 'Mehr Extreme' };
+  var SCENARIO_LABELS = { normal: 'Normalklima', extrem: 'Extremklima' };
 
   function setScenarioPanelOpen(open) {
     scenarioPanel.hidden = !open;
@@ -1997,6 +2161,56 @@
   holdToRepeat(countDownBtn, function () { stepBallCount(-1); });
   holdToRepeat(countUpBtn, function () { stepBallCount(1); });
 
+  // ============ DROP POINT ============
+  // Moves the mean without touching the spread, so it can be combined with
+  // Extremklima to get both effects of the "Verschiebung des Mittels" /
+  // "Zunahme der Streuung" pair at once.
+  var dropLeftBtn = document.getElementById('drop-left');
+  var dropRightBtn = document.getElementById('drop-right');
+  var dropValue = document.getElementById('drop-value');
+
+  function formatDrop() {
+    if (dropOffset === 0) return 'Mitte';
+    // Half-columns are what the lattice runs on, but a visitor thinks in
+    // whole columns, so the readout is in those.
+    var cols = dropOffset / 2;
+    var txt = Math.abs(cols).toFixed(1).replace('.', ',');
+    return (cols > 0 ? '+' : '\u2212') + txt;
+  }
+
+  function updateDropLabel() {
+    dropValue.textContent = formatDrop();
+    dropLeftBtn.disabled = dropOffset <= -DROP_MAX;
+    dropRightBtn.disabled = dropOffset >= DROP_MAX;
+  }
+
+  function stepDrop(dir) {
+    var next = dropOffset + dir * DROP_STEP;
+    if (next < -DROP_MAX) next = -DROP_MAX;
+    if (next > DROP_MAX) next = DROP_MAX;
+    if (next === dropOffset) return;
+    dropOffset = next;
+    updateDropLabel();
+    drawBoard();
+    updateHint();
+  }
+
+  holdToRepeat(dropLeftBtn, function () { stepDrop(-1); });
+  holdToRepeat(dropRightBtn, function () { stepDrop(1); });
+
+  // ============ AXIS CAPTION ============
+  // The caption has to say which of the four readings is active, because
+  // that is the whole difference between "this column is the tallest one"
+  // and "this column holds 100 balls".
+  var axisNote = document.getElementById('axis-note');
+
+  function updateAxisNote() {
+    axisNote.innerHTML =
+      'Y-Achse: <b>' + SCALE_LABELS[scaleMode] + '</b> \u2014 ganz oben steht f\u00fcr ' +
+      scaleCeilingText() + '. Tippe oder fahre \u00fcber eine S\u00e4ule f\u00fcr die genaue Zahl. ' +
+      'Rote gestrichelte Linien: ab hier gilt ein Ergebnis als <b>extrem</b>.';
+  }
+
   // ============ COMPARISON LINES ============
   var compareChips = Array.prototype.slice.call(compareRow.querySelectorAll('.compare-chip'));
 
@@ -2030,9 +2244,19 @@
   var devOn = false;
   var timeScale = 1;
   var devTheory = false;
-  var devAbsoluteScale = false;
   var SPEEDS = [0.25, 0.5, 1, 2, 4, 8];
   var DEV_KEY = 'scapeDevMode';
+
+  // How crowded a drop is allowed to get. A batch of 5000 at the exhibit's
+  // own pace arrives faster than the board can swallow, and the result is
+  // an unreadable wall of balls rather than a shower -- so dev mode can
+  // both slow the feed down and cap how many may be in the air at once.
+  // PACES are milliseconds between balls; null keeps the automatic pacing
+  // that scales with the batch size. CAPS are balls in flight; 0 = no cap.
+  var PACES = [null, 30, 60, 120, 250];
+  var CAPS = [0, 400, 150, 60, 25];
+  var devPace = null;
+  var devCap = 0;
 
   function devWanted() {
     if (/(?:^|[?&#])dev(?:=1)?(?:$|[&#])/.test(location.search + location.hash)) return true;
@@ -2092,12 +2316,33 @@
 
     document.getElementById('dev-export').addEventListener('click', exportCSV);
 
-    var devAbsBtn = document.getElementById('dev-abs-scale');
-    devAbsBtn.addEventListener('click', function () {
-      devAbsoluteScale = !devAbsoluteScale;
-      devAbsBtn.textContent = 'Säulenhöhe absolut: ' + (devAbsoluteScale ? 'an' : 'aus');
-      devAbsBtn.classList.toggle('on', devAbsoluteScale);
+    var devScaleBtn = document.getElementById('dev-scale');
+    devScaleBtn.addEventListener('click', function () {
+      var i = SCALE_MODES.indexOf(scaleMode);
+      scaleMode = SCALE_MODES[(i + 1) % SCALE_MODES.length];
+      devScaleBtn.textContent = 'Y-Achse: ' + SCALE_LABELS[scaleMode];
+      devScaleBtn.classList.toggle('on', scaleMode !== 'peak');
+      updateAxisNote();
       drawBalls();
+    });
+
+    var devPaceBtn = document.getElementById('dev-pace');
+    devPaceBtn.addEventListener('click', function () {
+      var i = PACES.indexOf(devPace);
+      devPace = PACES[(i + 1) % PACES.length];
+      devPaceBtn.textContent = 'Abstand: ' + (devPace === null ? 'automatisch' : devPace + ' ms');
+      devPaceBtn.classList.toggle('on', devPace !== null);
+      // Re-pace whatever is already queued, so the change is felt at once
+      // instead of only from the next Start.
+      if (toRelease > 0) applyPace(toRelease);
+    });
+
+    var devCapBtn = document.getElementById('dev-cap');
+    devCapBtn.addEventListener('click', function () {
+      var i = CAPS.indexOf(devCap);
+      devCap = CAPS[(i + 1) % CAPS.length];
+      devCapBtn.textContent = 'Max. gleichzeitig: ' + (devCap === 0 ? 'ohne' : devCap);
+      devCapBtn.classList.toggle('on', devCap !== 0);
     });
 
     devSpeedBtn.addEventListener('click', function () {
@@ -2174,17 +2419,24 @@
     hintBadge.hidden = true;
   }
 
+  // A batch falls as one shower, but with enough air between balls that
+  // they read as separate events rather than a solid stream. Batches far
+  // beyond what the stepper offers are a dev-mode stress test, so they are
+  // allowed to feed faster than the exhibit's own pace -- unless dev mode
+  // has set an explicit spacing, which then applies to every batch,
+  // +5000 included, because that is precisely the one that needs it.
+  function applyPace(n) {
+    if (devPace !== null) { releaseEvery = devPace / 1000; return; }
+    var floor = n > 1000 ? 0.008 : 0.030;
+    releaseEvery = Math.max(floor, Math.min(0.12, 12 / Math.max(1, n)));
+  }
+
   function queueBalls(n) {
     // Balls are always *added* to the board. Nothing is cleared, so a
     // visitor can keep topping up the same distribution -- and can edit
     // the pins in between, which is the whole point of the exhibit.
     toRelease += n;
-    // A batch falls as one shower, but with enough air between balls that
-    // they read as separate events rather than a solid stream. Batches far
-    // beyond what the slider offers are a dev-mode stress test, so they are
-    // allowed to feed faster than the exhibit's own pace.
-    var floor = n > 1000 ? 0.008 : 0.030;
-    releaseEvery = Math.max(floor, Math.min(0.12, 12 / Math.max(1, n)));
+    applyPace(n);
   }
 
   function startRun() {
@@ -2236,7 +2488,11 @@
     if (toRelease > 0) {
       releaseTimer += dt;
       var budget = MAX_SPAWN_PER_TICK;
-      while (releaseTimer >= releaseEvery && toRelease > 0 && budget > 0) {
+      // The crowd cap holds the queue back rather than dropping any of it:
+      // nothing is released while the board already has its fill, and the
+      // rest follows as soon as balls land and make room.
+      while (releaseTimer >= releaseEvery && toRelease > 0 && budget > 0 &&
+             (devCap === 0 || balls.length < devCap)) {
         releaseTimer -= releaseEvery;
         budget--;
         spawnBall();
@@ -2349,6 +2605,8 @@
     layout();
     setMode(IDLE);
     updateCountLabel();
+    updateDropLabel();
+    updateAxisNote();
     updateCompareChips();
     drawBoard();
     drawBalls();

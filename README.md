@@ -17,14 +17,46 @@ layout. Because a ball that meets no pin keeps drifting the way it
 was already going, editing the pin field is not neutral: thinning the right
 flank shifts the whole distribution towards the warm end, while thinning
 both outer flanks leaves the mean alone but widens the curve and fattens
-its tails. Three presets — *Normalklima*, *Wärmer*, *Mehr Extreme* —
-demonstrate the shift-of-mean, increase-of-variance and effect-on-extremes
-cases that the accompanying text explains.
+its tails.
 
-Tap or hover a histogram column for its exact ball count — bar height is
-always *relative to the tallest column*, not an absolute scale, which is
-what keeps a 20-ball run and a 5 000-ball run equally readable; the caption
-under the board says so, and the tooltip gives the real number on demand,
+Two controls under the board turn that into the two textbook cases, and
+they are deliberately independent so they can be combined. **Einwurf** — a
+small −/+ stepper — slides the point where balls enter the board, up to two
+columns either way in half-column steps, and the whole heap follows it one
+for one (measured over 1 460 balls: mean +0.52 at +0.5 columns, +1.06 at
++1.0), which is *Verschiebung des Mittels*. The funnel mouth leans towards
+the new entry point so the cause is visible on the board and not just in a
+number. **Extremklima**, the second of the two board states next to
+*Normalklima*, empties four pin rows (2, 5, 8 and 11 — 48 nails instead of
+78). That is the counter-intuitive part and it is the whole lesson: a nail
+re-rolls the dice, a gap does not. A ball falling through an empty row
+keeps the direction it already had, so those carried-over steps add up
+instead of cancelling, and the curve gets wider and flatter with the mean
+untouched — σ 1.75 → 2.25, extremes 0.8 % → 3.8 %, peak column 22.6 % →
+17.2 %. Set both at once and the third effect falls out by itself: at
+Extremklima with the drop two columns right, 9.0 % of balls land beyond the
+extreme markers against 0.8 % in the baseline.
+
+*Adding* pins would be the intuitive way to widen the curve, and it does
+not work on this board: the between-row nails are deterministic outward
+deflectors rather than extra coin flips, so switching all of them on turns
+the distribution into a bimodal U (σ = 6.0, 100 % extremes). Removing rows
+is the mechanism that actually produces the *Zunahme der Streuung* figure.
+Which rows matters too: emptying *every other* row collapses the board to
+a single bin, because a ball on an even half-column then never meets an
+odd one — rows 2/5/8/11 keep both parities in play and stay well behaved at
+every drop point. One honest cost: the triangle has no margin beyond its
+flanks, so a ball dropped off-centre falls a few rows before the board is
+wide enough to catch it and loses those decisions — σ 1.73 → 1.58 at one
+column out, → 1.41 at two. The mean stays exact. Widening the entry with an
+apron was tried and is worse (balls escape past the far flank and pile into
+the end bin, bimodal at ±2 columns).
+
+Tap or hover a histogram column for its exact ball count. What a column's
+full height *stands for* is a real question with no single right answer, so
+dev mode carries four readings of the y-axis to choose between and the
+caption under the board always names the active one in plain words — see
+the dev-panel notes below; the tooltip gives the real number on demand,
 plus one line per active comparison line at that same column. Two dashed
 red lines mark where the "Extreme" percentage in the readout starts
 counting. Up to three **Vergleichslinien** — a compact row of numbered
@@ -38,9 +70,10 @@ on-screen buttons for it, since it is a gesture people already know and
 there is nothing to pinch on desktop anyway.
 
 **Szenario** and **Alle entfernen** collapse into one row under the board:
-tapping the scenario button (labelled with whichever preset is active)
-opens a small panel with the three presets, which closes itself again once
-you pick one.
+tapping the scenario button (labelled with whichever state is active) opens
+a small panel with *Normalklima* and *Extremklima*, which closes itself
+again once you pick one. The **Einwurf** stepper sits in its own row just
+below, with its own `?`.
 
 - Pure client-side canvas + JavaScript — no build step, no server, no
   dependencies beyond a Google Fonts stylesheet.
@@ -64,7 +97,12 @@ you pick one.
   one ball diameter per cell, so the cost grows with the number of balls
   rather than with its square: 1 000 balls in flight hold a locked 60 fps.
   Contact is resolved once per physics substep rather than once per frame,
-  with gentler correction and a touch of sideways damping, and the feed
+  with gentler correction and a touch of sideways damping; the x-lattice
+  correction at each level crossing eases the ball onto the lattice instead
+  of snapping it there, which is what stopped two balls in the same column
+  being teleported onto the same point and then slowly prising themselves
+  apart — the "glued, then suddenly flung away" motion (frames holding a
+  stuck pair: 38.6 % → 4.2 %, longest stuck streak 22 frames → 2). The feed
   spawns balls across a wider mouth — together that is what keeps a crowded
   drop looking like a jostle rather than a jitter.
 - The feed scatters balls across the funnel mouth and gives each its own
@@ -83,9 +121,13 @@ you pick one.
   the lattice the bins are built on, which is what stops the histogram
   breaking into a comb.
 - Because a wedged nail deflects every ball that reaches it, a handful is
-  enough: the presets use four nails for a warmer climate and six for a
-  wilder one, placed well inside the triangle so no ball is thrown past
-  the rows below.
+  enough to bend a distribution by hand — placed well inside the triangle
+  so no ball is thrown past the rows below.
+- The drop point lands on a lattice of half-columns, but the stepper moves
+  in fractions of one. Rather than rounding — which would quietly make
+  "+0.5 columns" mean "+1" — a fractional offset starts each ball on one of
+  the two neighbouring slots at random, weighted so the *mean* entry point
+  is exactly where the readout says it is.
 - A ball enters at the apex and moves at most one column per row, so it can
   only ever reach |h| <= r at row r. That wedge is tinted on the board and
   bounds where pins can go: a pin outside it is provably unreachable, and
@@ -102,22 +144,32 @@ you pick one.
   `timeScale` each frame — slow motion made of the exact same ticks as
   normal speed, at a lower rate, rather than the same number of ticks fed a
   smaller time step (which would quietly be *different* physics, not the
-  same physics slowed down). A **Theorie-Kurve** toggle computes the *exact*
+  same physics slowed down). Two crowding controls, for the +5 000 runs
+  that used to arrive as an unreadable wall: **Abstand** fixes the gap
+  between releases (30/60/120/250 ms instead of the automatic pacing), and
+  **Max. gleichzeitig** caps how many balls may be in flight at once
+  (400/150/60/25), holding the rest in the queue until there is room —
+  measured with the cap at 60, a 5 000-ball run peaks at 60 balls in flight
+  instead of 1 115. A **Theorie-Kurve** toggle computes the *exact*
   probability distribution for whatever is currently on the board — a small
   dynamic program over (half-column, direction) states, using the identical
   branching stepBall itself uses, just without the dice — and draws it
   dotted, scaled to a fixed large total so it neither shrinks nor jumps
   around as the real run's own ball count changes; it is the same check
-  that keeps the "exactly binomial" claim above honest. A **S&auml;ulenh&ouml;he
-  absolut** toggle changes what a column's "full" height means: normally
-  it is simply whichever bin currently holds the most balls, which is why
-  one ball could fill a column solid, only for a second ball landing
-  elsewhere to also fill solid, and a third stacking onto the first to
-  suddenly halve both — the "full" mark kept chasing whatever had just
-  landed. Absolute mode measures against a fixed target instead — the
-  *Theorie-Kurve* peak, scaled to however many balls are actually queued —
-  so a column climbs smoothly towards its real, stable height as balls
-  land, rather than lurching every time the current leader changes. A
+  that keeps the "exactly binomial" claim above honest. A **Y-Achse**
+  button cycles through four answers to "what does a full column mean?",
+  each with its own trade-off, so the exhibit can be judged on real runs
+  rather than in the abstract: *Anteil der höchsten Säule* (the original —
+  always uses the full height, but the reference moves, which is why one
+  ball fills a column solid and a third ball stacking onto it halves the
+  neighbours), *Anteil aller Kugeln* (a column is full at 30 % of
+  everything that has landed — stable once a few hundred balls are down,
+  meaningless for the first few), *Anteil der erwarteten Spitze* (full =
+  the *Theorie-Kurve* peak scaled to however many balls are queued, so
+  columns climb smoothly towards their real final height) and *Kugeln je
+  Säule* (a flat 100 balls — genuinely absolute, but a 20-ball run is then
+  a barely visible smear). The caption under the board rewrites itself to
+  name the active one and what the top of the axis stands for. A
   **CSV exportieren** button downloads the current bin counts and summary
   stats. Dev mode also opens up two more columns of otherwise-unreachable,
   further-out diagonal pin slots (drawn as faint red dashed ghosts) for
