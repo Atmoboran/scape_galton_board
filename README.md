@@ -76,7 +76,7 @@ again once you pick one. The **Einwurf** stepper sits in its own row just
 below, with its own `?`.
 
 - Pure client-side canvas + JavaScript — no build step, no server, no
-  dependencies beyond a Google Fonts stylesheet.
+  external dependencies (no web fonts are loaded from the internet).
 - Simulation: each ball tracks which column it occupies and makes one
   left/right decision per pin row, so the board is exactly binomial
   (measured σ = 1.729 over 40 000 balls against an ideal σ = 1.732 for
@@ -184,8 +184,14 @@ below, with its own `?`.
   shorter box just means each unit of that space maps to fewer pixels
   vertically; nail spacing, ball size and the fall itself all stay exactly
   as tuned.
-- Design: SCAPE° corporate design (Archivo, thick ink borders, poster-hero
-  layout), mobile-first and optimized for touch, with a desktop view that
-  is auto-detected and can be toggled by hand.
+- Design: SCAPE° corporate design, kept apart from the app in `theme/`
+  (`theme.css`: font, palette, roles, wordmark; `theme.js`: brand texts and
+  every colour drawn on the board). To ship the exhibit in another design,
+  edit `theme/` only — see `theme/README.md`. Founders Grotesk is used when
+  installed or placed in `theme/fonts/`, otherwise Helvetica Neue / Inter /
+  Arial.
+- Layout: mobile-first and optimized for touch. The desktop view (auto-
+  detected, or toggled by hand) puts the board on the left, as large as the
+  screen allows, with the intro and every control in a column to its right.
 
 Open `index.html` directly, or serve the folder with any static file server.
