@@ -544,7 +544,7 @@
         <button type="button" class="info-dot" data-help="drop-help" aria-expanded="false" aria-controls="drop-help" aria-label="Einwurf erkl&auml;ren">?</button>
       </div>
       <div class="help-pop" id="drop-help" hidden>
-        <p>Verschiebt die Stelle, an der die Kugeln ins Brett fallen. Der ganze Berg wandert eins zu eins mit: ein halbes Feld nach rechts eingeworfen hei&szlig;t ein halbes Feld w&auml;rmerer Mittelwert &mdash; die <b>Verschiebung des Mittels</b>.</p>
+        <p>Verschiebt die Stelle, an der die Kugeln ins Brett fallen, um bis zu zwei S&auml;ulen nach links oder rechts. Der ganze Berg wandert eins zu eins mit: eine S&auml;ule weiter rechts eingeworfen hei&szlig;t ein Feld w&auml;rmerer Mittelwert &mdash; die <b>Verschiebung des Mittels</b>.</p>
         <p>Das l&auml;sst sich mit <b>Extremklima</b> kombinieren: verschobener Mittelwert <i>und</i> gr&ouml;&szlig;ere Streuung zugleich, so wie es echte Messreihen zeigen.</p>
         <p>Weit au&szlig;en f&auml;llt eine Kugel erst ein paar Reihen weit, bevor das Dreieck breit genug ist, sie zu fangen &mdash; diese Reihen fehlen ihr als Entscheidungen, die Streuung wird dadurch etwas kleiner. Der Mittelwert bleibt exakt.</p>
       </div>
@@ -552,7 +552,7 @@
         <p>Tippe auf eine <b>leere Stelle</b> im hellen Dreieck, um dort einen Nagel zu setzen. Tippe auf einen <b>vorhandenen Nagel</b>, um ihn wieder zu entfernen &mdash; ein und dieselbe Geste, kein Umschalten n&ouml;tig.</p>
         <p>Entfernte N&auml;gel hinterlassen eine L&uuml;cke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zur&uuml;ckgelenkt zu werden. Zus&auml;tzliche N&auml;gel kannst du <b>zwischen</b> zwei Reihen setzen &mdash; dort erscheint ein feiner Punkt als Platzhalter &mdash; so ein eingekeilter Nagel wirft jede Kugel, die ihn erreicht, eine Spalte nach au&szlig;en. Nur im hellen Dreieck wirken N&auml;gel.</p>
         <p><b>Alle N&auml;gel entfernen</b> leert das ganze Brett auf einen Schlag &mdash; der Berg bleibt liegen, nur trifft jede weitere Kugel auf keinen einzigen Nagel mehr.</p>
-        <p><b>Normalklima</b> ist das volle Dreieck: jede Reihe besetzt, jede Kugel entscheidet zw&ouml;lfmal neu. <b>Extremklima</b> l&auml;sst vier Reihen leer &mdash; weniger N&auml;gel, nicht mehr. Klingt verkehrt, ist aber der Punkt: ein Nagel w&uuml;rfelt neu, eine L&uuml;cke nicht. Wer durch eine leere Reihe f&auml;llt, beh&auml;lt einfach die Richtung von vorher, und solche mitgeschleppten Schritte addieren sich, statt sich auszugleichen. Ergebnis: gleicher Mittelwert, rund 30&nbsp;% mehr Streuung, sechsmal so viele Extreme &mdash; die <b>Zunahme der Streuung</b>.</p>
+        <p><b>Normalklima</b> ist das volle Dreieck: jede Reihe besetzt, jede Kugel entscheidet zw&ouml;lfmal neu. <b>Extremklima</b> d&uuml;nnt jede zweite Reihe aus, auf L&uuml;cke &mdash; weniger N&auml;gel, nicht mehr. Klingt verkehrt, ist aber der Punkt: ein Nagel w&uuml;rfelt neu, eine L&uuml;cke nicht. Wer durch eine L&uuml;cke f&auml;llt, beh&auml;lt einfach die Richtung von vorher, und solche mitgeschleppten Schritte addieren sich, statt sich auszugleichen. Ergebnis: gleicher Mittelwert, rund ein Viertel mehr Streuung, viermal so viele Extreme &mdash; die <b>Zunahme der Streuung</b>.</p>
       </div>
     </div>
 
@@ -610,7 +610,7 @@
       </div>
       <div class="dev-row">
         <button type="button" id="dev-speed">Zeitraffer &times;1</button>
-        <button type="button" id="dev-collide" class="on">Kollisionen: an</button>
+        <button type="button" id="dev-collide">Kollisionen: aus</button>
       </div>
       <div class="dev-row">
         <button type="button" id="dev-clear-balls">Kugeln zur&uuml;cksetzen</button>
@@ -629,10 +629,11 @@
 
       <div class="dev-stats" id="dev-stats">&mdash;</div>
       <div class="dev-note"><b>Y-Achse</b> schaltet zwischen vier Lesarten der S&auml;ulenh&ouml;he durch &mdash; die Bildunterschrift unter dem Brett sagt jeweils, worauf sich die H&ouml;he bezieht:
+        <i>Kugeln je S&auml;ule (mitwachsend)</i> &mdash; neuer Standard: eine S&auml;ule ist schlicht eine Kugelzahl, die volle H&ouml;he ist die n&auml;chste runde Zahl &uuml;ber der h&ouml;chsten S&auml;ule (10, 20, 50, 100, &hellip;). Sie steigt nur, nie f&auml;llt sie, und wenn sie steigt, schrumpfen alle S&auml;ulen im selben Moment um denselben Faktor;
         <i>Anteil der h&ouml;chsten S&auml;ule</i> (bisheriger Standard, f&uuml;llt immer das Bild, aber der Ma&szlig;stab wandert mit, sobald eine andere S&auml;ule die h&ouml;chste wird);
         <i>Anteil aller Kugeln</i> (volle H&ouml;he = 30&nbsp;% aller gefallenen Kugeln &mdash; genau die Wahrscheinlichkeitsverteilung, steht nach rund hundert Kugeln still);
-        <i>Anteil der erwarteten Spitze</i> (Ziel ist die exakt berechnete Spitze des angeforderten Laufs);
-        <i>Kugeln je S&auml;ule</i> (volle H&ouml;he = 100 Kugeln, v&ouml;llig starr).
+        <i>Kugeln je S&auml;ule (fest)</i> (volle H&ouml;he = immer 100 Kugeln, v&ouml;llig starr).
+        <i>Anteil der erwarteten Spitze</i> ist raus: der Ma&szlig;stab h&auml;ngte an der <i>angeforderten</i> Kugelzahl, also skalierte schon ein zweiter Start das ganze Bild herunter, bevor eine neue Kugel gefallen war.
         <b>Abstand</b> und <b>Max. gleichzeitig</b> entzerren gro&szlig;e Sch&uuml;be: der eine bremst den Nachschub, der andere l&auml;sst erst nachrutschen, wenn wieder Platz ist &mdash; beides gilt auch f&uuml;r +1000/+5000.
         <b>Zeitraffer</b> rechnet mehrere Simulationsschritte pro Bild; unter &times;1 l&auml;uft es nur an jedem n-ten Bild, statt mit kleineren Schritten zu rechnen &mdash; Zeitlupe ohne andere Physik.
         <b>Theorie-Kurve</b> rechnet die exakte Wahrscheinlichkeitsverteilung f&uuml;r das aktuelle Nagelbild aus und zeigt sie gepunktet.</div>
@@ -702,7 +703,7 @@
         <figcaption><b>Am Rand wird aus wenig sehr viel.</b> Eine kleine Verschiebung des Mittels vervielfacht die F&auml;lle jenseits der Schwelle &mdash; weil die Glockenkurve dort steil abf&auml;llt. Aus einem &bdquo;Jahrhundertsommer&ldquo; wird so binnen Jahrzehnten ein Ereignis, das mehrfach pro Generation auftritt.</figcaption>
       </figure>
           <p class="blurb">
-            Alle drei Effekte lassen sich am Brett selbst nachstellen. Der <b>Einwurf</b> unter dem Brett verschiebt die Stelle, an der die Kugeln hineinfallen &mdash; der ganze Berg wandert mit, das ist Effekt&nbsp;1. <b>Extremklima</b> l&auml;sst vier Nagelreihen leer: wer durch eine L&uuml;cke f&auml;llt, beh&auml;lt seine Richtung, statt neu zu w&uuml;rfeln, und solche mitgeschleppten Schritte summieren sich zu gr&ouml;&szlig;eren Ausschl&auml;gen &mdash; gleicher Mittelwert, breiterer Berg, Effekt&nbsp;2. Beide zusammen ergeben Effekt&nbsp;3: schon ein halbes Feld Verschiebung plus die gr&ouml;&szlig;ere Streuung vervielfacht die Kugeln jenseits der roten Linien.
+            Alle drei Effekte lassen sich am Brett selbst nachstellen. Der <b>Einwurf</b> unter dem Brett verschiebt die Stelle, an der die Kugeln hineinfallen &mdash; der ganze Berg wandert mit, das ist Effekt&nbsp;1. <b>Extremklima</b> d&uuml;nnt jede zweite Nagelreihe auf L&uuml;cke aus: wer durch eine L&uuml;cke f&auml;llt, beh&auml;lt seine Richtung, statt neu zu w&uuml;rfeln, und solche mitgeschleppten Schritte summieren sich zu gr&ouml;&szlig;eren Ausschl&auml;gen &mdash; gleicher Mittelwert, breiterer Berg, Effekt&nbsp;2. Beide zusammen ergeben Effekt&nbsp;3: schon ein Feld Verschiebung plus die gr&ouml;&szlig;ere Streuung vervielfacht die Kugeln jenseits der roten Linien.
           </p>
         </div>
       </details>
@@ -868,38 +869,50 @@
   // every ball re-deciding left/right twelve times, which is exactly what
   // makes it binomial (sigma = sqrt(12)/2 = 1.73 columns).
   //
-  // Extremklima leaves rows 2, 5, 8 and 11 empty. That is the opposite of
-  // what intuition suggests -- *fewer* nails, not more -- and it is worth
-  // spelling out why it widens the spread rather than narrowing it. A nail
-  // re-rolls the dice: it sends the ball left or right with a fresh coin,
-  // independent of how it arrived, and independent steps are what keep a
-  // binomial narrow (they cancel each other out). A gap does not re-roll
-  // anything: a ball crossing an empty row simply keeps going the way it
-  // was already going. Those carried-over steps are correlated rather than
-  // independent, and correlated steps add up instead of cancelling -- so
-  // the mountain gets wider and flatter, with the same mean.
+  // Extremklima thins the board instead of adding to it. That is the
+  // opposite of what intuition suggests -- *fewer* nails, not more -- and
+  // it is worth spelling out why it widens the spread rather than
+  // narrowing it. A nail re-rolls the dice: it sends the ball left or
+  // right with a fresh coin, independent of how it arrived, and
+  // independent steps are what keep a binomial narrow (they cancel each
+  // other out). A gap does not re-roll anything: a ball crossing one
+  // simply keeps going the way it was already going. Those carried-over
+  // steps are correlated rather than independent, and correlated steps add
+  // up instead of cancelling -- so the mountain gets wider and flatter,
+  // with the same mean.
   //
-  // Measured exactly (not sampled), at the centre drop point:
-  //   Normalklima  sigma 1.73   peak bin 22.6%   outer bins 0.6%
-  //   Extremklima  sigma 2.24   peak bin 17.2%   outer bins 3.9%
-  // i.e. 30% more spread, a visibly lower peak, and six times as many
-  // extremes -- the "Zunahme der Streuung" figure, mean untouched.
+  // The pattern: every odd row stays complete, every even row keeps only
+  // half of its nails, in a checkerboard that shifts by one column from
+  // one thinned row to the next. 63 nails instead of 78.
   //
-  // Which four rows matters more than how many. Dropping every *second*
-  // row looks tidier but leaves only odd-numbered half-columns reachable,
-  // so a ball entering on an even one (any whole-column drop offset) meets
-  // nothing at all and falls straight through -- the distribution collapses
-  // onto a single bin. Rows 2/5/8/11 keep both parities represented, so the
-  // board stays well behaved at every drop point.
-  var EXTREME_EMPTY_ROWS = [2, 5, 8, 11];
+  //        r=0        .           .           *           .           .
+  //        r=1        .        *     *        .
+  //        r=2        .     *     .     *     .
+  //        r=3     *     *     *     *
+  //        r=4  *     .     *     .     *
+  //
+  // Thinning *within* a row rather than emptying whole rows matters for
+  // two reasons. A completely empty row lets every ball through, so the
+  // correlated step is certain rather than a coin's worth of chance, which
+  // overshoots; and a board of alternate empty rows leaves only one parity
+  // of half-column reachable, so a ball entering on the other one meets
+  // nothing at all and the distribution collapses onto a single bin. Here
+  // every row still catches about half the balls that reach it, at every
+  // drop point.
+  function extremeKeeps(r, h) {
+    if (r % 2 !== 0) return true;              // odd rows stay complete
+    return (((h - r) % 4) + 4) % 4 === 0;      // even rows: every other nail
+  }
 
   function scenarioPins(name) {
     var p = defaultPins();
     if (name !== 'extrem') return p;
 
-    for (var i = 0; i < EXTREME_EMPTY_ROWS.length; i++) {
-      var q = EXTREME_EMPTY_ROWS[i] * 2;      // row r lives on level 2r
-      for (var j = 0; j < HSPAN; j++) p[q][j] = false;
+    for (var r = 0; r < ROWS; r++) {
+      var q = r * 2;                           // row r lives on level 2r
+      for (var h = -r; h <= r; h += 2) {
+        if (!extremeKeeps(r, h)) p[q][h + HOFF] = false;
+      }
     }
     return p;
   }
@@ -1047,20 +1060,20 @@
   // escape past the far flank, which piles them into the end bin and turns
   // the curve two-humped.
   var DROP_MAX = 4;         // half-columns either way (= 2 whole columns)
-  var DROP_STEP = 0.5;      // half-columns per tap of the stepper
+  var DROP_STEP = 2;        // one whole column per tap of the stepper
   var dropOffset = 0;       // in half-columns; 0 = the apex
 
-  // x of the drop point in unit space, used by the feed and by the funnel.
+  // Whole columns, not half ones, and the reason is Extremklima rather
+  // than tidiness. A ball entering off-centre carries no direction yet, so
+  // it does not drift: it waits in its entry column until some row has a
+  // nail there. On the thinned board the rows that can catch it sit on
+  // even half-columns, so an entry on an odd one is quantised down to the
+  // even one below it and the shift is simply swallowed -- exactly, not
+  // approximately (the DP gives mean 0.016 instead of the 0.5 asked for).
+  // Whole-column steps land on the slots the board actually catches, and
+  // the mean then tracks the stepper exactly in both climates.
   function dropX() { return halfX(0, dropOffset); }
-
-  // The lattice slot a ball actually starts on: the slider's position
-  // rounded to a whole slot, up or down, with the probability that makes
-  // the average come out exactly on the slider.
-  function dropSlot() {
-    var lo = Math.floor(dropOffset);
-    var frac = dropOffset - lo;
-    return (frac > 0 && Math.random() < frac) ? lo + 1 : lo;
-  }
+  function dropSlot() { return dropOffset; }
 
   function spawnBall() {
     // h = the ball's position in half-columns, advanced level by level.
@@ -1104,65 +1117,89 @@
   }
 
   // ============ WHAT THE Y-AXIS MEANS ============
-  // Four ways to answer "how tall is a column", selectable in dev mode so
-  // the right one can be picked by looking at it rather than by argument.
-  // Every one of them answers a different question:
+  // Four ways to answer "how tall is a column". 'auto' is what the exhibit
+  // ships with; the other three stay in dev mode so the choice can be
+  // re-made by looking rather than by argument.
   //
-  //  'peak'   Share of the tallest column. The shipped default. Always
-  //           fills the frame, so a 20-ball run and a 5000-ball run read
-  //           the same -- but the yardstick is whatever bin is currently
+  //  'auto'   A plain ball count, like 'fixed' -- but the ceiling is the
+  //           next round number above the tallest column, off a 1-2-5
+  //           ladder (10, 20, 50, 100, ...). So a column means exactly
+  //           what it says ("this column holds 40 of the 100 balls that
+  //           make a full column"), small runs are still readable, and
+  //           big ones do not peg. The ceiling only ever rises as balls
+  //           land, and when it does, every column shortens by the same
+  //           factor at the same moment -- one legible rescale of the
+  //           whole picture, rather than columns swapping heights among
+  //           themselves. The caption names the current ceiling.
+  //  'peak'   Share of the tallest column. The old default. Always fills
+  //           the frame, but the yardstick is whatever bin is currently
   //           winning, so it moves under you: one ball fills a column
   //           solid, a second elsewhere does too, and a third stacking on
-  //           the first halves both. This is the "it keeps switching"
-  //           the brief complains about, and it is inherent to the mode.
+  //           the first halves both.
   //  'share'  Share of all balls that landed, against a fixed ceiling of
-  //           SHARE_FULL. This is literally the probability distribution
-  //           the exhibit is about, it settles after a hundred balls or so
-  //           and then stops moving no matter how many more fall, and the
-  //           number has a plain-language meaning ("6% of all balls").
-  //  'run'    Against the exact theoretical peak for the run that is
-  //           queued. Stable within a run, but jumps when the next Start
-  //           changes the run size.
-  //  'fixed'  Against a fixed number of balls per column (FIXED_FULL).
-  //           Never moves at all; a column is simply a ball count. Small
-  //           runs stay tiny, big runs peg at the ceiling.
-  var SCALE_MODES = ['peak', 'share', 'run', 'fixed'];
+  //           SHARE_FULL. Literally the probability distribution the
+  //           exhibit is about, and it stops moving after a hundred balls
+  //           or so -- but it means nothing for the first few.
+  //  'fixed'  Against a flat FIXED_FULL balls per column. Never moves at
+  //           all; a 20-ball run is then a barely visible smear.
+  //
+  // A fifth mode, "share of the expected peak", was tried and dropped: it
+  // scaled to the theoretical peak times the number of balls *queued*, so
+  // merely pressing Start again rescaled the whole histogram downwards
+  // before a single new ball had landed.
+  var SCALE_MODES = ['auto', 'peak', 'share', 'fixed'];
   var SCALE_LABELS = {
-    peak: 'Anteil der höchsten Säule',
+    auto: 'Kugeln je S\u00e4ule (mitwachsend)',
+    peak: 'Anteil der h\u00f6chsten S\u00e4ule',
     share: 'Anteil aller Kugeln',
-    run: 'Anteil der erwarteten Spitze',
-    fixed: 'Kugeln je Säule'
+    fixed: 'Kugeln je S\u00e4ule (fest)'
   };
-  var scaleMode = 'peak';
+  var scaleMode = 'auto';
   var SHARE_FULL = 0.30;    // 30% of all balls = a full column
   var FIXED_FULL = 100;     // 100 balls = a full column
+  var AUTO_START = 10;      // the smallest ceiling the auto mode uses
+  // A plain 1-2-5 ladder would leave the tallest column at half height in
+  // the worst case -- 51 balls against a ceiling of 100 -- so the picture
+  // would often sit in the bottom half of the frame. These steps are still
+  // round numbers to read off (10, 15, 20, 30, 50, 70, 100, 150, ...) but
+  // never more than a factor 1.67 apart, so the tallest column always
+  // fills at least 60% of the height, at the price of a few more rescales
+  // over a long run.
+  var AUTO_LADDER = [1, 1.5, 2, 3, 5, 7];
+
+  // Smallest ladder number that is at least n, never below AUTO_START.
+  function autoCeiling(n) {
+    var pow = 1;
+    while (pow <= 1e7) {
+      for (var i = 0; i < AUTO_LADDER.length; i++) {
+        var c = AUTO_LADDER[i] * pow;
+        if (c >= AUTO_START && c >= n) return c;
+      }
+      pow *= 10;
+    }
+    return 1e7;
+  }
 
   // The ceiling a column is measured against, in *ball counts*, so the
   // histogram, the curve tracing its tops and the tooltip all agree.
   function currentColMax() {
-    var i, peak, total;
+    var i, total;
     if (scaleMode === 'share') {
       total = 0;
       for (i = 0; i < BINS; i++) total += bins[i];
       return Math.max(1, total * SHARE_FULL);
     }
     if (scaleMode === 'fixed') return FIXED_FULL;
-    if (scaleMode === 'run') {
-      var theory = computeTheory();
-      peak = 0;
-      for (i = 0; i < BINS; i++) peak = Math.max(peak, theory[i]);
-      total = settled + toRelease + balls.length;
-      return Math.max(1, (peak / 100000) * total);
-    }
-    return binMax();
+    if (scaleMode === 'peak') return binMax();
+    return autoCeiling(binMax());
   }
 
   // What the top of the bin area stands for, spelled out for the caption.
   function scaleCeilingText() {
     if (scaleMode === 'share') return Math.round(SHARE_FULL * 100) + ' % aller Kugeln';
     if (scaleMode === 'fixed') return FIXED_FULL + ' Kugeln';
-    if (scaleMode === 'run') return 'die erwartete Spitze des Laufs';
-    return 'die aktuell höchste Säule';
+    if (scaleMode === 'peak') return 'die h\u00f6chste S\u00e4ule';
+    return autoCeiling(binMax()) + ' Kugeln';
   }
 
   // Height of the drawn histogram column of a bin, in unit space.
@@ -1255,7 +1292,18 @@
         b.vy = -BOUNCE;
         b.vx = (nxt - b.x) / hopTime(b.vy);
       } else {
-        b.vx = (nxt - b.x) / hopTime(0);
+        // No nail here, so no upward kick -- the ball is already falling
+        // fast and crosses to the next level in a fraction of the time a
+        // bounce takes. Timing this hop as if the ball were starting from
+        // rest (hopTime(0)) made it about 2.7x too slow sideways, so a
+        // ball that arrived with any sideways speed fell short of the slot
+        // it was heading for and got yanked the rest of the way by the
+        // lattice correction at the next level: the "it gets dragged
+        // sideways instead of falling through" artefact, visible only on
+        // balls that had bounced off a nail just before (one dropping
+        // straight down has nothing to fall short of). Using its actual
+        // downward speed makes the gap a smooth, steep free flight.
+        b.vx = (nxt - b.x) / hopTime(b.vy);
       }
       b.nextRow++;
       if (b.nextRow >= LEVELS) {
@@ -1308,7 +1356,7 @@
   // Pairs are found with a uniform grid of one ball diameter per cell, so
   // the work grows with the number of balls rather than with its square:
   // several thousand balls in flight still fit comfortably in a frame.
-  var ballCollisions = true;
+  var ballCollisions = false;   // off by default: a clean, readable fall
   // Gentler and interleaved beats strong and lumped: resolveCollisions()
   // now runs once per substep (twice a frame) rather than once after both,
   // so positions are re-integrated between correction passes instead of
@@ -1736,6 +1784,7 @@
   }
 
   function updateReadout() {
+    updateAxisNote();     // the ceiling moves while balls land
     // Show what is still on its way, so topping the board up mid-run reads
     // as "more coming" rather than looking like nothing happened.
     var pending = toRelease + balls.length;
@@ -2174,8 +2223,7 @@
     // Half-columns are what the lattice runs on, but a visitor thinks in
     // whole columns, so the readout is in those.
     var cols = dropOffset / 2;
-    var txt = Math.abs(cols).toFixed(1).replace('.', ',');
-    return (cols > 0 ? '+' : '\u2212') + txt;
+    return (cols > 0 ? '+' : '\u2212') + Math.abs(cols);
   }
 
   function updateDropLabel() {
@@ -2204,11 +2252,19 @@
   // and "this column holds 100 balls".
   var axisNote = document.getElementById('axis-note');
 
+  var axisNoteText = '';
+
   function updateAxisNote() {
-    axisNote.innerHTML =
-      'Y-Achse: <b>' + SCALE_LABELS[scaleMode] + '</b> \u2014 ganz oben steht f\u00fcr ' +
+    // The ceiling moves while balls land, so this runs on every readout
+    // update -- but only touches the DOM when the sentence actually
+    // changed, which for a whole batch is a handful of times.
+    var txt =
+      'Y-Achse: <b>' + SCALE_LABELS[scaleMode] + '</b> \u2014 volle H\u00f6he = ' +
       scaleCeilingText() + '. Tippe oder fahre \u00fcber eine S\u00e4ule f\u00fcr die genaue Zahl. ' +
       'Rote gestrichelte Linien: ab hier gilt ein Ergebnis als <b>extrem</b>.';
+    if (txt === axisNoteText) return;
+    axisNoteText = txt;
+    axisNote.innerHTML = txt;
   }
 
   // ============ COMPARISON LINES ============
