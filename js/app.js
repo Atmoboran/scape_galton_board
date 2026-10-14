@@ -1432,12 +1432,28 @@
     scenarioToggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
+  // Extremklima is a climate, not just a nail pattern: a warmer world has
+  // both a shifted mean and a wider spread, so switching to it moves the
+  // drop point one column to the warm side as well, and switching back to
+  // Normalklima returns it to the middle. The Einwurf stepper is not
+  // locked by this -- it stays free to move from wherever the scenario put
+  // it, so the two effects can still be told apart by hand.
+  //
+  // One column rather than two: at two the entry sits so far out that the
+  // triangle only catches the ball a few rows down, and the spread the
+  // scenario is there to show shrinks back (sigma 2.13 at the centre, 1.89
+  // one column out, 1.62 at two).
+  const EXTREME_DROP = 2;     // half-columns = one whole column
+
   function setScenario(name) {
     // A preset swaps the whole board, so the heap is cleared: the point of
     // the presets is to compare one finished distribution with another.
     // Hand-editing single pins deliberately keeps the heap instead.
     pins = scenarioPins(name);
     scenarioName = name;
+    dropOffset = name === 'extrem' ? EXTREME_DROP : 0;
+    shiftMark = settled;
+    updateDropLabel();
     scenarioBtns.forEach((b) => {
       b.classList.toggle('active', b.getAttribute('data-scenario') === name);
     });
