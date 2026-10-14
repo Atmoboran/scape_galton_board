@@ -1,0 +1,87 @@
+/* Galton-Brett – layout only (theme variables from theme/theme.css,
+   shared components from css/kit.css). */
+
+/* ---- the board: a square that zooms inside its frame ---- */
+#stage-frame { overflow: hidden; }
+#stage {
+  position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;
+  touch-action: none; overflow: hidden; transform-origin: center center;
+}
+.stage-frame:fullscreen #stage, .stage-frame.is-full #stage { width: min(100vw, 100vh); height: min(100vw, 100vh); }
+#stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* speech bubble over a column: exact count plus active comparison lines */
+.bin-tooltip {
+  position: absolute; z-index: 5; transform: translate(-50%, -130%);
+  background: var(--ink); color: var(--paper);
+  font-weight: var(--fw-medium); font-size: 12px; letter-spacing: .02em; line-height: 1.6;
+  padding: 4px 8px; white-space: nowrap; pointer-events: none;
+}
+.bin-tooltip[hidden] { display: none; }
+.bin-tooltip::after {
+  content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: var(--ink);
+}
+.tt-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
+
+.axis-note { font-size: 13px; line-height: 1.5; color: var(--ink-muted); margin: 8px 0 12px; }
+
+/* ---- small rows of controls ---- */
+.row { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; flex-wrap: wrap; }
+.row .label { font-size: 12px; font-weight: var(--fw-medium); letter-spacing: .06em; text-transform: var(--caps); min-width: 5.5em; }
+.row .info { margin-left: auto; }
+.sq {
+  flex: none; width: var(--tap); height: var(--tap); padding: 0;
+  border: var(--line-width) solid var(--line); background: var(--paper); color: var(--ink);
+  font-weight: var(--fw-medium); font-size: 18px; line-height: 1; cursor: pointer;
+}
+.sq:disabled { opacity: .35; cursor: default; }
+.row output, .row b.val { min-width: 3.4em; text-align: center; font-size: 15px; font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
+.seg-row { display: flex; gap: 8px; flex: 1; min-width: 0; }
+.seg-row .btn { flex: 1; padding: 8px 6px; font-size: 12.5px; }
+
+/* comparison tiles */
+.compare-chip {
+  flex: none; width: var(--tap); height: var(--tap); display: flex; align-items: center; justify-content: center;
+  border: var(--line-width) solid var(--line); background: var(--paper); cursor: pointer; padding: 0;
+}
+.compare-num { font-weight: var(--fw-medium); font-size: 13px; color: var(--ink); }
+.compare-chip.filled { border-style: dashed; }
+.compare-chip[data-slot="0"].filled { background: var(--compare-1); border-color: var(--compare-1); }
+.compare-chip[data-slot="1"].filled { background: var(--compare-2); border-color: var(--compare-2); }
+.compare-chip[data-slot="2"].filled { background: var(--compare-3); border-color: var(--compare-3); }
+.compare-chip.filled .compare-num { color: var(--ink-inverse); }
+
+/* the scenario toggle opens two buttons below it */
+#scenario-toggle { flex: 1; }
+#scenario-toggle[aria-expanded="true"] { background: var(--active); color: var(--active-ink); }
+.opt-caret { font-size: 9px; margin-left: 4px; }
+.scenario-panel { margin: 0 0 10px; }
+.scenario-panel[hidden] { display: none; }
+#tool-wipe { flex: 1; }
+
+/* start / single / reset */
+#sim-primary { flex: 1.5; }
+#sim-single { flex: 1.1; }
+#sim-reset { flex: .9; }
+.readout-grid { gap: 10px 18px; }
+
+/* ---- dev panel (staff only) ---- */
+.dev-panel { border: 2px dashed var(--line); background: var(--c-lavender); padding: 12px; margin: 12px 0; }
+.dev-panel[hidden] { display: none; }
+.dev-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: var(--fw-medium); letter-spacing: .1em; text-transform: var(--caps); margin-bottom: 10px; }
+.dev-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.dev-panel button { flex: 1; border: var(--line-width) solid var(--line); background: var(--paper); color: var(--ink); font-weight: var(--fw-medium); font-size: 12px; text-transform: var(--caps); padding: 9px 4px; cursor: pointer; }
+.dev-head button { flex: none; padding: 4px 8px; }
+.dev-panel button.on { background: var(--active); color: var(--active-ink); }
+.dev-stats { font-size: 12px; font-variant-numeric: tabular-nums; margin-top: 10px; }
+.dev-note { font-size: 12px; line-height: 1.45; opacity: .75; margin-top: 6px; }
+
+/* ---- distribution figures in the topics ---- */
+.figure { border: var(--line-width) solid var(--line); background: var(--stage-bg); padding: 12px 12px 8px; margin: 0 0 14px; }
+.figure svg { display: block; width: 100%; height: auto; }
+.figure figcaption { margin-top: 8px; font-size: 14px; line-height: 1.45; }
+.figure .ax { stroke: var(--ink); }
+.figure .t { font-family: var(--font); font-size: 9px; font-weight: 500; fill: var(--ink); }
+#compare-row { margin-top: 12px; }
+:root[data-view="desktop"] .axis-note { width: min(100%, calc(100svh - var(--head-h) - var(--fit-offset, 230px))); min-width: 360px; margin-inline: auto; }
