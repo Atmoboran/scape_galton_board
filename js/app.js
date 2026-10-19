@@ -19,6 +19,7 @@
   // what it was (0.09), since that is the stretch a ball uses to slide
   // back onto its own column after a shove.
   const BIN_TOP = 0.69;       // where the bin walls begin
+  const FUNNEL_Y = 0.075;     // where the funnel narrows to its mouth
   const PIN_R = 0.009;        // pin radius
   const BALL_R = 0.011;       // ball radius
   // Fall time scales as 1/sqrt(g), so a quarter of the speed needs a
@@ -821,19 +822,75 @@
   const GC = window.THEME.galton;
   const INK = GC.ink;
 
+  // The grip under the funnel mouth, plus the rail it slides on. Drawn
+  // rather than placed as a DOM control, so it lives in the same picture
+  // as the funnel and survives pinch-zooming the board.
+  // Drawn on the ball canvas rather than the board one, so the falling
+  // stream passes *behind* the grip: a chute handle in front of the balls
+  // reads as solid, a white box the balls cross reads as a glitch.
+  function drawDropHandle() {
+    const ctx = ballCtx;
+    const mouth = dropX();
+    const railY = (FUNNEL_Y + 0.030) * H;
+    const x0 = halfX(0, -DROP_MAX) * W;
+    const x1 = halfX(0, DROP_MAX) * W;
+
+    ctx.strokeStyle = INK;
+    ctx.globalAlpha = 0.30;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x0, railY);
+    ctx.lineTo(x1, railY);
+    ctx.stroke();
+    // A notch per position it can snap to, so the steps are visible.
+    for (let h = -DROP_MAX; h <= DROP_MAX; h += DROP_STEP) {
+      const nx = halfX(0, h) * W;
+      ctx.beginPath();
+      ctx.moveTo(nx, railY - 3);
+      ctx.lineTo(nx, railY + 3);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    const cx = mouth * W;
+    const hw = Math.max(16, 0.055 * W), hh = Math.max(11, 0.018 * H);
+    ctx.fillStyle = GC.handle;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.rect(cx - hw, railY - hh, hw * 2, hh * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Two arrowheads: the one and only thing this grip does is slide.
+    ctx.fillStyle = INK;
+    [-1, 1].forEach((dir) => {
+      const tipX = cx + dir * (hw - 5);
+      ctx.beginPath();
+      ctx.moveTo(tipX, railY);
+      ctx.lineTo(tipX - dir * 6, railY - 5);
+      ctx.lineTo(tipX - dir * 6, railY + 5);
+      ctx.closePath();
+      ctx.fill();
+    });
+  }
+
   function drawBoard() {
     boardCtx.clearRect(0, 0, W, H);
 
     // --- funnel ---
+    // The funnel *is* the Einwurf control: it leans to wherever the balls
+    // enter and can be dragged along the top of the board. A separate
+    // stepper under the board moved a number; this moves the thing the
+    // balls actually come out of, which is what a visitor standing in
+    // front of the exhibit can see happening.
+    const mouth = dropX();
     boardCtx.fillStyle = INK;
     boardCtx.beginPath();
-    // The mouth leans towards wherever the balls actually enter, so the
-    // drop point has a visible cause on the board and not just a number.
-    const mouth = dropX();
     boardCtx.moveTo(0.10 * W, 0);
     boardCtx.lineTo(0.90 * W, 0);
-    boardCtx.lineTo((mouth + 0.065) * W, 0.075 * H);
-    boardCtx.lineTo((mouth - 0.065) * W, 0.075 * H);
+    boardCtx.lineTo((mouth + 0.065) * W, FUNNEL_Y * H);
+    boardCtx.lineTo((mouth - 0.065) * W, FUNNEL_Y * H);
     boardCtx.closePath();
     boardCtx.fill();
 
@@ -997,15 +1054,15 @@
     }
 
     drawCurve();
+    drawDropHandle();
   }
 
-  // Draws a smoothed outline over a set of bin counts, normalised to its
-  // own peak -- which is what makes two curves with different totals (a
-  // batch of 365 against a dev-mode run of 5000) comparable by shape.
-  // maxOverride lets the live bins' curve share the exact ceiling the
-  // histogram columns beneath it are measured against (see
-  // currentColMax), so the line still traces the tops of the bars when
-  // that ceiling is not simply "whichever bin is currently tallest".
+  // Draws a smoothed outline over a set of bin counts. maxOverride is the
+  // ceiling to measure them against -- every caller now passes
+  // currentColMax(), so the live curve traces the tops of its own bars and
+  // a saved comparison line is drawn to the same scale as what is
+  // currently on the board. Without it a curve is normalised to its own
+  // peak, which is only ever right for a curve with nothing to compare to.
   function strokeCurve(counts, color, width, dash, maxOverride) {
     let n = 0, i;
     for (i = 0; i < BINS; i++) n += counts[i];
@@ -1048,11 +1105,25 @@
   const COMPARE_COLORS = GC.compare;
 
   function drawCurve() {
-    strokeCurve(bins, GC.curve, 3, null, currentColMax());
+    // Every curve is drawn against the *same* ceiling as the columns.
+    // A saved comparison line used to be normalised to its own peak, so it
+    // ignored the stepper completely: a 365-ball run frozen as a reference
+    // was drawn as tall as a 5000-ball one, and neither matched the
+    // columns underneath. A comparison line that cannot be compared with
+    // what is on the board is worse than none.
+    const ceiling = currentColMax();
+    strokeCurve(bins, GC.curve, 3, null, ceiling);
     for (let s = 0; s < savedCurves.length; s++) {
-      if (savedCurves[s]) strokeCurve(savedCurves[s], COMPARE_COLORS[s], 2.5, [7, 6]);
+      if (savedCurves[s]) strokeCurve(savedCurves[s], COMPARE_COLORS[s], 2.5, [7, 6], ceiling);
     }
-    if (devOn && devTheory) strokeCurve(computeTheory(), GC.theory, 2, [1, 5]);
+    if (devOn && devTheory) {
+      // The theory is a probability distribution; against a ceiling
+      // measured in balls it only means something once it is multiplied by
+      // how many balls this run has (or will have).
+      const n = Math.max(1, settled + toRelease + balls.length);
+      const theory = computeTheory().map((p) => (p / 100000) * n);
+      strokeCurve(theory, GC.theory, 2, [1, 5], ceiling);
+    }
   }
 
   // ============ STATISTICS ============
@@ -1161,11 +1232,11 @@
       // Nothing is finished here -- the board simply ran out of queued
       // balls. The button invites topping the same distribution up again.
       primaryLabel.textContent = t('primary.more');
-      primarySub.textContent = t('primary.moreSub');
+      primarySub.textContent = t('primary.moreSub', ballCount);
       primaryIcon.innerHTML = ICON_PLAY;
     } else {
       primaryLabel.textContent = t('primary.start');
-      primarySub.textContent = t('primary.startSub');
+      primarySub.textContent = t('primary.startSub', ballCount);
       primaryIcon.innerHTML = ICON_PLAY;
     }
   }
@@ -1338,7 +1409,30 @@
   const activePointers = {};
   let singleGesture = null;
   let pinchGesture = null;
+  let dropGesture = false;
   const MOVE_THRESHOLD = 6;
+
+  // The band across the top of the board that belongs to the funnel: the
+  // funnel itself, its grip and a finger's worth of slack under it. Well
+  // clear of the first nail row at TOP_Y.
+  function inDropBand(pt) { return pt.y <= FUNNEL_Y + 0.055; }
+
+  // Where along the rail the finger is, snapped to a whole column.
+  function dropFromPoint(pt) {
+    const raw = (pt.x - 0.5) / COL_DX;                  // in whole columns
+    const snapped = Math.round(raw) * 2;                // in half-columns
+    return Math.max(-DROP_MAX, Math.min(DROP_MAX, snapped));
+  }
+
+  function dragDropTo(pt) {
+    const next = dropFromPoint(pt);
+    if (next === dropOffset) return;
+    dropOffset = next;
+    shiftMark = settled;
+    updateDropLabel();
+    drawBoard();
+    updateHint();
+  }
 
   function pointerCount() { return Object.keys(activePointers).length; }
 
@@ -1348,6 +1442,7 @@
 
     if (pointerCount() === 2) {
       singleGesture = null;
+      dropGesture = false;
       const ids = Object.keys(activePointers);
       const p1 = activePointers[ids[0]], p2 = activePointers[ids[1]];
       pinchGesture = {
@@ -1362,6 +1457,11 @@
         id: ev.pointerId, x0: ev.clientX, y0: ev.clientY, moved: false,
         panX0: panX, panY0: panY, ptUnit0: pt
       };
+      // A touch on the funnel band grabs the Einwurf rather than panning
+      // or placing a nail, and follows the finger from the first frame --
+      // tapping somewhere on the rail moves it there too.
+      dropGesture = inDropBand(pt);
+      if (dropGesture) { dragDropTo(pt); hideBinTooltip(); return; }
       updateBinTooltip(pt);
     }
   });
@@ -1379,6 +1479,11 @@
       panY = pinchGesture.panY0 + (midY - pinchGesture.midY0);
       clampPan();
       applyZoomTransform();
+      return;
+    }
+
+    if (dropGesture && singleGesture && singleGesture.id === ev.pointerId) {
+      dragDropTo(localPoint(ev));
       return;
     }
 
@@ -1409,7 +1514,8 @@
     }
 
     if (singleGesture && singleGesture.id === ev.pointerId) {
-      if (!singleGesture.moved) onStageTap(singleGesture.ptUnit0);
+      if (dropGesture) dropGesture = false;
+      else if (!singleGesture.moved) onStageTap(singleGesture.ptUnit0);
       singleGesture = null;
     }
     scheduleHideTooltip();
@@ -1417,7 +1523,7 @@
 
   stage.addEventListener('pointercancel', (ev) => {
     delete activePointers[ev.pointerId];
-    if (singleGesture && singleGesture.id === ev.pointerId) singleGesture = null;
+    if (singleGesture && singleGesture.id === ev.pointerId) { singleGesture = null; dropGesture = false; }
     if (pointerCount() < 2) pinchGesture = null;
   });
 
@@ -1510,6 +1616,10 @@
     countLabel.textContent = ballCount;
     countDownBtn.disabled = ballCount <= BALL_COUNT_MIN;
     countUpBtn.disabled = ballCount >= BALL_COUNT_MAX;
+    // The stepper now sits directly above the button it parameterises, and
+    // the button says what pressing it will do -- "365 Kugeln fallen
+    // lassen" rather than a number set somewhere further up the page.
+    if (mode === IDLE || mode === DONE) setMode(mode);
   }
 
   function stepBallCount(dir) {

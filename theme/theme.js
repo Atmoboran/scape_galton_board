@@ -55,6 +55,7 @@ THEME.galton = {
   ink: '#000000',              // funnel, nails, outlines
   ball: '#D55117',             // balls in flight
   binFill: '#FFFFFF',          // stacked columns
+  handle: '#FFFFFF',           // the Einwurf grip on the funnel
   binBalls: '#F2E4BA',         // ball shapes on top of a column
   wedge: 'rgba(255,255,255,.45)',      // the reachable triangle
   wedgeEdge: 'rgba(0,0,0,.22)',

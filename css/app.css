@@ -82,6 +82,11 @@
 }
 .sq:disabled { opacity: .35; cursor: default; }
 .row output, .row b.val { min-width: 3.4em; text-align: center; font-size: 15px; font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
+
+/* How many balls a Start drops: directly above the Start button, because
+   it is that button's one parameter -- and the button spells the number
+   out ("365 Kugeln fallen lassen"), so the two read as one control. */
+.count-row { margin-bottom: 8px; }
 .seg-row { display: flex; gap: 8px; flex: 1; min-width: 0; }
 .seg-row .btn { flex: 1; padding: 8px 6px; font-size: 12.5px; }
 

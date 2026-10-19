@@ -53,21 +53,6 @@
         </div>
       </div>
 
-      <div class="row">
-        <span class="label" data-t="drop.label"></span>
-        <button type="button" class="sq" id="drop-left" data-t-aria="drop.left">&minus;</button>
-        <b class="val" id="drop-value" data-t="drop.middle"></b>
-        <button type="button" class="sq" id="drop-right" data-t-aria="drop.right">&plus;</button>
-        <button type="button" class="info" aria-controls="drop-help" data-t-aria="drop.infoAria"></button>
-      </div>
-      <div class="info-note" id="drop-help" hidden data-t-html="drop.note"></div>
-
-      <div class="row">
-        <span class="label" data-t="readout.start"></span>
-        <button type="button" class="sq" id="count-down" data-t-aria="readout.fewer">&minus;</button>
-        <b class="val" id="ball-count-label">365</b>
-        <button type="button" class="sq" id="count-up" data-t-aria="readout.more">&plus;</button>
-      </div>
     </div>
 
     <div class="lab-stage">
@@ -84,6 +69,12 @@
           <span class="cap-unit" data-t="cap.unit"></span>
         </div>
       </div>
+      <div class="sr-only" id="drop-ctl">
+        <span data-t="drop.label"></span>
+        <button type="button" id="drop-left" data-t-aria="drop.left">&minus;</button>
+        <b id="drop-value" data-t="drop.middle"></b>
+        <button type="button" id="drop-right" data-t-aria="drop.right">&plus;</button>
+      </div>
       <p class="axis-note" id="axis-note"></p>
     </div>
 
@@ -93,6 +84,13 @@
         <div><span data-t="readout.mean"></span><b id="ro-mean">–</b></div>
         <div><span data-t="readout.sd"></span><b id="ro-sd">–</b></div>
         <div><span data-t="readout.extremes"></span><b id="ro-extreme">0 %</b></div>
+      </div>
+
+      <div class="row count-row">
+        <span class="label" data-t="readout.start"></span>
+        <button type="button" class="sq" id="count-down" data-t-aria="readout.fewer">&minus;</button>
+        <b class="val" id="ball-count-label">365</b>
+        <button type="button" class="sq" id="count-up" data-t-aria="readout.more">&plus;</button>
       </div>
 
       <div class="btn-row">

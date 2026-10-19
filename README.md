@@ -62,6 +62,12 @@ Three decisions in `js/app.js` are not obvious from the code alone:
   passes, instead of half of them); emptying every second row collapses the
   board onto one bin, because only one parity of half-column stays
   reachable.
+- **The drop point is the funnel.** It is dragged along a notched rail at
+  the top of the board rather than set with a stepper under it, so a
+  visitor standing in front of the exhibit sees the thing the balls come
+  out of move. The grip is drawn on the ball canvas, after the balls, so
+  the stream passes behind it. A pair of visually hidden buttons
+  (`#drop-ctl`) keeps it reachable by keyboard and screen reader.
 - **The drop point steps in whole columns.** A ball enters carrying no
   direction, so it does not drift: it waits in its entry column until some
   row has a nail there. On the thinned board those rows sit on even
