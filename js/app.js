@@ -7,12 +7,18 @@
   // y in [0,1] from the funnel mouth down to the floor of the bins. All
   // physics runs in this space and is only scaled to pixels for drawing,
   // so the simulation behaves identically on a phone and on a desktop.
-  const ROWS = 12;            // triangular pin rows
+  const ROWS = 10;            // triangular pin rows
   const BINS = ROWS + 1;      // one collecting bin per landing column
   const TOP_Y = 0.17;         // first pin row
   const ROW_DY = 0.049;       // vertical pin spacing
   const COL_DX = 0.060;       // horizontal pin spacing
-  const BIN_TOP = 0.80;       // where the bin walls begin
+  // Two rows fewer than it had (12 -> 10) and the bin walls 11 points
+  // higher (0.80 -> 0.69): together that is 58% more height for the
+  // columns in unit space, and the frame is a tenth taller on top of that.
+  // The gap between the last pin row and the bin tops is kept at roughly
+  // what it was (0.09), since that is the stretch a ball uses to slide
+  // back onto its own column after a shove.
+  const BIN_TOP = 0.69;       // where the bin walls begin
   const PIN_R = 0.009;        // pin radius
   const BALL_R = 0.011;       // ball radius
   // Fall time scales as 1/sqrt(g), so a quarter of the speed needs a
@@ -134,8 +140,8 @@
 
   // ============ THE TWO CLIMATES ============
   // Normalklima is the classic full triangle: every row of nails present,
-  // every ball re-deciding left/right twelve times, which is exactly what
-  // makes it binomial (sigma = sqrt(12)/2 = 1.73 columns).
+  // every ball re-deciding left/right ten times, which is exactly what
+  // makes it binomial (sigma = sqrt(10)/2 = 1.58 columns).
   //
   // Extremklima thins the board instead of adding to it. That is the
   // opposite of what intuition suggests -- *fewer* nails, not more -- and
@@ -151,7 +157,7 @@
   //
   // The pattern: every odd row stays complete, every even row keeps only
   // half of its nails, in a checkerboard that shifts by one column from
-  // one thinned row to the next. 63 nails instead of 78.
+  // one thinned row to the next. 45 nails instead of 55.
   //
   //        r=0        .           .           *           .           .
   //        r=1        .        *     *        .
@@ -160,8 +166,8 @@
   //        r=4  *     .     *     .     *
   //
   // Measured exactly (not sampled), at the centre drop point:
-  //   Normalklima  sigma 1.73   peak bin 22.6%   outer bins 3.9%
-  //   Extremklima  sigma 2.13   peak bin 18.7%   outer bins 9.5%
+  //   Normalklima  sigma 1.58   peak bin 24.6%   extremes 2.1%
+  //   Extremklima  sigma 1.89   peak bin 18.8%   extremes 6.4%
   //
   // Thinning *within* a row rather than emptying whole rows matters for
   // two reasons. A completely empty row (an earlier version emptied rows
@@ -326,8 +332,8 @@
   // One honest side effect: the triangle has no margin above its flanks, so
   // a ball entering off-centre falls past the first few rows before the
   // triangle is wide enough to catch it, and those rows are decisions it
-  // never makes. Measured exactly: at +1 column sigma goes 1.73 -> 1.58, at
-  // +2 columns 1.73 -> 1.41. The mean stays exact throughout. Widening the
+  // never makes. Measured exactly: at +1 column sigma goes 1.58 -> 1.41, at
+  // +2 columns 1.58 -> 1.22. The mean stays exact throughout. Widening the
   // triangle to compensate was tried and is worse: the extra nails let balls
   // escape past the far flank, which piles them into the end bin and turns
   // the curve two-humped.
@@ -413,23 +419,31 @@
   //           the exhibit is about, it settles after a hundred balls or so
   //           and then stops moving no matter how many more fall, and the
   //           number has a plain-language meaning ("6% of all balls").
-  //  'fixed'  Against a fixed number of balls per column (FIXED_FULL).
-  //           Never moves at all; a 20-ball run is a barely visible smear.
+  //  'fixed'  Against a ceiling the visitor sets (colCap, default 1000).
+  //           The shipped reading: never moves by itself, so the heap just
+  //           grows; the stepper beside the columns zooms in and out.
   //
   // A fifth mode, "share of the expected peak", was tried and dropped: it
   // scaled to the theoretical peak times the number of balls *queued*, so
   // merely pressing Start again rescaled the whole histogram downwards
   // before a single new ball had landed.
-  const SCALE_MODES = ['auto', 'peak', 'share', 'fixed'];
+  const SCALE_MODES = ['fixed', 'auto', 'peak', 'share'];
   const SCALE_LABELS = {
     auto: t('scale.auto'),
     peak: t('scale.peak'),
     share: t('scale.share'),
     fixed: t('scale.fixed')
   };
-  let scaleMode = 'auto';
+  let scaleMode = 'fixed';
   const SHARE_FULL = 0.30;    // 30% of all balls = a full column
-  const FIXED_FULL = 100;     // 100 balls = a full column
+
+  // The shipped reading: a column is a ball count against a ceiling the
+  // visitor sets, with the small stepper beside the columns. Nothing moves
+  // on its own, so a heap that is topped up keeps growing in the same
+  // frame -- and when it outgrows it, zooming out is one tap rather than
+  // an automatic rescale the visitor did not ask for.
+  const CAP_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+  let colCap = 1000;          // balls in a full column
   const AUTO_START = 10;      // the smallest ceiling the auto mode uses
   // A plain 1-2-5 ladder would leave the tallest column at half height in
   // the worst case -- 51 balls against a ceiling of 100 -- so the picture
@@ -461,7 +475,7 @@
       for (i = 0; i < BINS; i++) total += bins[i];
       return Math.max(1, total * SHARE_FULL);
     }
-    if (scaleMode === 'fixed') return FIXED_FULL;
+    if (scaleMode === 'fixed') return colCap;
     if (scaleMode === 'peak') return binMax();
     return autoCeiling(binMax());
   }
@@ -469,7 +483,7 @@
   // What the top of the bin area stands for, spelled out for the caption.
   function scaleCeilingText() {
     if (scaleMode === 'share') return t('scale.ceilingShare', Math.round(SHARE_FULL * 100));
-    if (scaleMode === 'fixed') return t('scale.ceilingFixed', FIXED_FULL);
+    if (scaleMode === 'fixed') return t('scale.ceilingFixed', colCap);
     if (scaleMode === 'peak') return t('scale.ceilingPeak');
     return t('scale.ceilingFixed', autoCeiling(binMax()));
   }
@@ -1441,8 +1455,8 @@
   //
   // One column rather than two: at two the entry sits so far out that the
   // triangle only catches the ball a few rows down, and the spread the
-  // scenario is there to show shrinks back (sigma 2.13 at the centre, 1.89
-  // one column out, 1.62 at two).
+  // scenario is there to show shrinks back (sigma 1.89 at the centre, 1.62
+  // one column out, 1.32 at two).
   const EXTREME_DROP = 2;     // half-columns = one whole column
 
   function setScenario(name) {
@@ -1562,10 +1576,49 @@
   // The caption has to say which of the four readings is active, because
   // that is the whole difference between "this column is the tallest one"
   // and "this column holds 100 balls".
+  // ============ COLUMN CEILING ============
+  // "How many balls make a full column", as a stepper right beside the
+  // columns it scales -- the one number in the picture a visitor may want
+  // to change while looking at it.
+  const capUpBtn = document.getElementById('cap-up');
+  const capDownBtn = document.getElementById('cap-down');
+  const capValue = document.getElementById('cap-value');
+  const capCtl = document.getElementById('cap-ctl');
+
+  function updateCapLabel() {
+    capValue.textContent = colCap;
+    const i = CAP_STEPS.indexOf(colCap);
+    capDownBtn.disabled = i <= 0;
+    capUpBtn.disabled = i >= CAP_STEPS.length - 1;
+    // The other three readings work out their own ceiling, so the stepper
+    // would be a dead control there: it says so rather than lying.
+    capCtl.classList.toggle('off', scaleMode !== 'fixed');
+  }
+
+  function stepCap(dir) {
+    const i = CAP_STEPS.indexOf(colCap);
+    const next = Math.max(0, Math.min(CAP_STEPS.length - 1, i + dir));
+    if (next === i) return;
+    colCap = CAP_STEPS[next];
+    updateCapLabel();
+    drawBoard();
+    drawBalls();
+    updateReadout();
+  }
+
+  holdToRepeat(capUpBtn, () => { stepCap(1); });
+  holdToRepeat(capDownBtn, () => { stepCap(-1); });
+  // The board under it listens for taps to set and clear nails; the
+  // stepper is on top of that, so its own taps must stop there.
+  ['pointerdown', 'pointerup', 'click'].forEach((ev) => {
+    capCtl.addEventListener(ev, (e) => { e.stopPropagation(); });
+  });
+
   const axisNote = document.getElementById('axis-note');
   let axisNoteText = '';
 
   function updateAxisNote() {
+    updateCapLabel();
     // The ceiling moves while balls land, so this runs on every readout
     // update -- but only touches the DOM when the sentence actually
     // changed, which for a whole batch is a handful of times.

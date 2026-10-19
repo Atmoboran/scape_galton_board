@@ -38,10 +38,16 @@ window.TEXTS = {
     auto: 'Kugeln je Säule (mitwachsend)',
     peak: 'Anteil der höchsten Säule',
     share: 'Anteil aller Kugeln',
-    fixed: 'Kugeln je Säule (fest)',
+    fixed: 'Kugeln je Säule',
     ceilingShare: pct => pct + ' % aller Kugeln',
     ceilingFixed: n => n + ' Kugeln',
     ceilingPeak: 'die höchste Säule'
+  },
+
+  cap: {
+    unit: 'Kugeln je Säule',
+    more: 'Mehr Kugeln je Säule (herauszoomen)',
+    less: 'Weniger Kugeln je Säule (hineinzoomen)'
   },
 
   scenario: {
@@ -52,7 +58,7 @@ window.TEXTS = {
     custom: 'Angepasst',
     wipe: 'Alle entfernen',
     infoAria: 'Brett und Szenarien erklären',
-    note: '<p>Tippe auf eine <b>leere Stelle</b> im hellen Dreieck, um dort einen Nagel zu setzen. Tippe auf einen <b>vorhandenen Nagel</b>, um ihn wieder zu entfernen.</p><p>Entfernte Nägel hinterlassen eine Lücke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zurückgelenkt zu werden. Zusätzliche Nägel kannst du <b>zwischen</b> zwei Reihen setzen – dort erscheint ein feiner Punkt als Platzhalter. So ein Nagel wirft jede Kugel, die ihn erreicht, eine Spalte nach außen.</p><p><b>Alle entfernen</b> leert das ganze Brett – der Berg bleibt liegen, nur trifft jede weitere Kugel auf keinen Nagel mehr.</p><p><b>Normalklima</b> ist das volle Dreieck: Jede Kugel entscheidet zwölfmal neu, der Einwurf liegt in der Mitte. <b>Extremklima</b> dünnt jede zweite Reihe auf Lücke aus <i>und</i> setzt den Einwurf eine Säule nach rechts – wärmere Welt heißt beides zugleich. Ein Nagel würfelt neu, eine Lücke nicht: Wer durch eine Lücke fällt, behält die Richtung von vorher, und solche Schritte summieren sich. Ergebnis: Der Berg wandert nach rechts <i>und</i> wird breiter, mit deutlich mehr Kugeln jenseits der roten Linien. Mit <b>Einwurf</b> lässt sich die Verschiebung jederzeit wieder zurücknehmen, um die beiden Effekte einzeln zu sehen.</p>'
+    note: '<p>Tippe auf eine <b>leere Stelle</b> im hellen Dreieck, um dort einen Nagel zu setzen. Tippe auf einen <b>vorhandenen Nagel</b>, um ihn wieder zu entfernen.</p><p>Entfernte Nägel hinterlassen eine Lücke: Kugeln fliegen dort ungebremst weiter, statt zur Mitte zurückgelenkt zu werden. Zusätzliche Nägel kannst du <b>zwischen</b> zwei Reihen setzen – dort erscheint ein feiner Punkt als Platzhalter. So ein Nagel wirft jede Kugel, die ihn erreicht, eine Spalte nach außen.</p><p><b>Alle entfernen</b> leert das ganze Brett – der Berg bleibt liegen, nur trifft jede weitere Kugel auf keinen Nagel mehr.</p><p><b>Normalklima</b> ist das volle Dreieck: Jede Kugel entscheidet zehnmal neu, der Einwurf liegt in der Mitte. <b>Extremklima</b> dünnt jede zweite Reihe auf Lücke aus <i>und</i> setzt den Einwurf eine Säule nach rechts – wärmere Welt heißt beides zugleich. Ein Nagel würfelt neu, eine Lücke nicht: Wer durch eine Lücke fällt, behält die Richtung von vorher, und solche Schritte summieren sich. Ergebnis: Der Berg wandert nach rechts <i>und</i> wird breiter, mit deutlich mehr Kugeln jenseits der roten Linien. Mit <b>Einwurf</b> lässt sich die Verschiebung jederzeit wieder zurücknehmen, um die beiden Effekte einzeln zu sehen.</p>'
   },
 
   drop: {
@@ -87,7 +93,7 @@ window.TEXTS = {
     single: 'Einzeln', singleSub: 'Eine Kugel',
     reset: 'Reset', resetSub: 'Nur die Kugeln'
   },
-  hint: n => 'Nägel im Brett: ' + n + '. Ein einzelner Wurf sagt nichts, erst viele Kugeln zeigen das Klima. Das Brett ist ein Modell: Echtes Wetter hängt von viel mehr ab als von zwölf Nagelreihen.',
+  hint: n => 'Nägel im Brett: ' + n + '. Ein einzelner Wurf sagt nichts, erst viele Kugeln zeigen das Klima. Das Brett ist ein Modell: Echtes Wetter hängt von viel mehr ab als von zehn Nagelreihen.',
 
   tasks: {
     title: 'Aufgaben',
@@ -117,7 +123,7 @@ window.TEXTS = {
     pace: ms => 'Abstand: ' + (ms === null ? 'automatisch' : ms + ' ms'),
     cap: n => 'Max. gleichzeitig: ' + (n === 0 ? 'ohne' : n),
     stats: (active, queue, landed, fps) => 'aktiv ' + active + ' · Warteschlange ' + queue + ' · gelandet ' + landed + ' · ' + fps + ' fps',
-    note: '<b>Y-Achse</b> schaltet zwischen vier Lesarten der Säulenhöhe durch – die Bildunterschrift unter dem Brett sagt jeweils, worauf sich die Höhe bezieht: <i>Kugeln je Säule (mitwachsend)</i> (Standard: eine Säule ist eine Kugelzahl, volle Höhe ist die nächste runde Zahl darüber – 10, 15, 20, 30, 50, 70, 100 …; sie steigt nur, und dann schrumpfen alle Säulen gleichzeitig um denselben Faktor); <i>Anteil der höchsten Säule</i> (vorheriger Standard, füllt immer das Bild, aber der Maßstab wandert mit); <i>Anteil aller Kugeln</i> (volle Höhe = 30 % aller gefallenen Kugeln – die Wahrscheinlichkeitsverteilung); <i>Kugeln je Säule (fest)</i> (volle Höhe = immer 100 Kugeln, starr). <i>Anteil der erwarteten Spitze</i> ist raus: der Maßstab hing an der angeforderten Kugelzahl, ein zweiter Start skalierte das Bild herunter, bevor eine neue Kugel gefallen war. <b>Abstand</b> und <b>Max. gleichzeitig</b> entzerren große Schübe. <b>Zeitraffer</b> rechnet mehrere Simulationsschritte pro Bild. <b>Theorie-Kurve</b> zeigt die exakte Wahrscheinlichkeitsverteilung für das aktuelle Nagelbild gepunktet.'
+    note: '<b>Y-Achse</b> schaltet zwischen vier Lesarten der Säulenhöhe durch – die Bildunterschrift unter dem Brett sagt jeweils, worauf sich die Höhe bezieht: <i>Kugeln je Säule (mitwachsend)</i> (eine Säule ist eine Kugelzahl, volle Höhe ist die nächste runde Zahl über der höchsten Säule – 10, 15, 20, 30, 50, 70, 100 …; sie steigt nur, und dann schrumpfen alle Säulen gleichzeitig um denselben Faktor); <i>Anteil der höchsten Säule</i> (vorheriger Standard, füllt immer das Bild, aber der Maßstab wandert mit); <i>Anteil aller Kugeln</i> (volle Höhe = 30 % aller gefallenen Kugeln – die Wahrscheinlichkeitsverteilung); <i>Kugeln je Säule</i> (neuer Standard: volle Höhe = der Wert am Regler neben den Säulen, voreingestellt 1000; ändert sich nie von selbst). <i>Anteil der erwarteten Spitze</i> ist raus: der Maßstab hing an der angeforderten Kugelzahl, ein zweiter Start skalierte das Bild herunter, bevor eine neue Kugel gefallen war. <b>Abstand</b> und <b>Max. gleichzeitig</b> entzerren große Schübe. <b>Zeitraffer</b> rechnet mehrere Simulationsschritte pro Bild. <b>Theorie-Kurve</b> zeigt die exakte Wahrscheinlichkeitsverteilung für das aktuelle Nagelbild gepunktet.'
   },
 
   topics: {

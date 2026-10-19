@@ -1,14 +1,59 @@
 /* Galton-Brett – layout only (theme variables from theme/theme.css,
    shared components from css/kit.css). */
 
-/* ---- the board: a square that zooms inside its frame ---- */
+/* ---- the board: a tall box that zooms inside its frame ----
+   A tenth taller than wide rather than square, which goes entirely to the
+   columns at the bottom. The simulation is defined in a unit space, so a
+   taller box simply maps each unit of height to more pixels -- nail
+   spacing, ball size and the fall itself are untouched. */
+:root { --board-aspect: 1.1; }
+#stage-frame.square { aspect-ratio: 1 / var(--board-aspect); }
 #stage-frame { overflow: hidden; }
 #stage {
   position: absolute; inset: 0; margin: auto; width: 100%; height: 100%;
   touch-action: none; overflow: hidden; transform-origin: center center;
 }
-.stage-frame:fullscreen #stage, .stage-frame.is-full #stage { width: min(100vw, 100vh); height: min(100vw, 100vh); }
+.stage-frame:fullscreen #stage, .stage-frame.is-full #stage {
+  width: min(100vw, calc(100vh / var(--board-aspect)));
+  height: calc(min(100vw, calc(100vh / var(--board-aspect))) * var(--board-aspect));
+}
 #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* On desktop the kit sizes the frame from the free height; with a tall
+   board that budget has to be divided by the aspect, or the frame grows
+   past the fold. */
+:root[data-view="desktop"] #stage-frame.fit {
+  width: min(100%, calc((100svh - var(--head-h) - var(--fit-offset, 230px)) / var(--board-aspect)));
+}
+
+/* ---- how many balls make a full column ----
+   Beside the columns it scales, not down in a panel: it is the one number
+   in the picture a visitor may want to change while looking at it. Sits in
+   the frame rather than in #stage, so pinch-zooming the board leaves it
+   where it is. */
+.cap-ctl {
+  position: absolute; left: 5px; bottom: 6px; z-index: 4;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.cap-ctl button {
+  width: 24px; height: 24px; padding: 0; flex: none; cursor: pointer;
+  border: var(--line-width) solid var(--line);
+  background: var(--paper); color: var(--ink);
+  font: inherit; font-weight: var(--fw-bold); font-size: 13px; line-height: 1;
+}
+.cap-ctl button:active { background: var(--ink); color: var(--paper); }
+.cap-ctl button:disabled { opacity: .3; cursor: default; }
+.cap-ctl b {
+  font-size: 11px; font-weight: var(--fw-bold); font-variant-numeric: tabular-nums;
+  background: var(--paper); border: var(--line-width) solid var(--line);
+  padding: 1px 4px; min-width: 24px; text-align: center;
+}
+.cap-ctl .cap-unit {
+  font-size: 8px; font-weight: var(--fw-bold); letter-spacing: .06em;
+  text-transform: uppercase; text-align: center; max-width: 42px; line-height: 1.15;
+  opacity: .75;
+}
+.cap-ctl.off { opacity: .35; pointer-events: none; }
 
 /* speech bubble over a column: exact count plus active comparison lines */
 .bin-tooltip {

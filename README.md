@@ -52,10 +52,10 @@ Three decisions in `js/app.js` are not obvious from the code alone:
 - **Extremklima thins the board, it does not add to it.** Every odd row
   stays complete, every even row keeps only half of its nails, in a
   checkerboard that shifts by one column from one thinned row to the next
-  (63 nails instead of 78). A nail re-rolls the dice; a gap does not, so a
+  (45 nails instead of 55). A nail re-rolls the dice; a gap does not, so a
   ball crossing one keeps the direction it already had, and those
   correlated steps add up instead of cancelling. Exactly (not sampled):
-  σ 1.73 → 2.13, peak column 22.6 % → 18.7 %, outer bins 3.9 % → 9.5 %,
+  σ 1.58 → 1.89, peak column 24.6 % → 18.8 %, extremes 2.1 % → 6.4 %,
   mean untouched. Adding the between-row nails instead widens nothing —
   they are deterministic outward deflectors, and switching them all on
   gives a bimodal U (σ = 6.0). Emptying whole rows overshoots (every ball
@@ -69,12 +69,23 @@ Three decisions in `js/app.js` are not obvious from the code alone:
   swallowed — the exact DP gives a mean of 0.016 where 0.5 was asked for.
   With whole columns the mean tracks the stepper exactly in both climates
   (measured over 2 920 balls: +0.99 and +2.02). The triangle has no margin
-  beyond its flanks, so an off-centre drop does cost spread: σ 1.73 → 1.58
-  → 1.41 in Normalklima, 2.13 → 1.89 → 1.62 in Extremklima.
-- **A column is a ball count.** The ceiling is the next round number above
-  the tallest column (10, 15, 20, 30, 50, 70, 100, …). It only ever rises,
-  and when it does every column shortens by the same factor at the same
-  instant. Three other readings stay in the dev panel.
+  beyond its flanks, so an off-centre drop does cost spread: σ 1.58 → 1.41
+  → 1.22 in Normalklima, 1.89 → 1.62 → 1.32 in Extremklima.
+- **A column is a ball count against a ceiling the visitor sets.** The
+  stepper beside the columns runs 10 · 20 · 50 · 100 · 200 · 500 · 1000 ·
+  2000 · 5000 and starts at 1000, so nothing rescales by itself: a heap
+  that is topped up just keeps growing in the same frame, and zooming out
+  is a tap rather than something that happens to you. At the default a
+  365-ball run fills about a twelfth of the height — that is the trade for
+  runs of several thousand; `colCap` in `js/app.js` sets the starting
+  value. Three other readings (an auto-growing ceiling, share of the
+  tallest column, share of all balls) stay in the dev panel.
+- **Ten pin rows, not twelve, and the bin walls start at 0.69 instead of
+  0.80.** Together with a frame a tenth taller than wide that is about
+  75 % more height for the columns. The simulation lives in a unit space,
+  so a taller box only maps each unit of height to more pixels; nail
+  spacing, ball size and the fall are untouched. Ten rows means 11 bins and
+  an ideal σ of √10/2 = 1.581 (measured 1.57).
 
 ## Adapting
 
