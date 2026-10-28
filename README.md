@@ -105,12 +105,13 @@ Three decisions in `js/app.js` are not obvious from the code alone:
   → 1.22 in Normalklima, 1.89 → 1.62 → 1.32 in Extremklima.
 - **A column is a ball count against a ceiling the visitor sets.** The
   stepper beside the columns runs 10 · 20 · 50 · 100 · 200 · 500 · 1000 ·
-  2000 · 5000 and starts at 1000, so nothing rescales by itself: a heap
-  that is topped up just keeps growing in the same frame, and zooming out
-  is a tap rather than something that happens to you. At the default a
-  365-ball run fills about a twelfth of the height — that is the trade for
-  runs of several thousand; `colCap` in `js/app.js` sets the starting
-  value. Three other readings (an auto-growing ceiling, share of the
+  2000 · 5000 and starts at 200, which puts the default 365-ball run at
+  about half the available height. Nothing rescales by itself: a heap that
+  is topped up just keeps growing in the same frame, and zooming out is a
+  tap rather than something that happens to you. When a column does reach
+  the ceiling the `+` lights up, because at that point every further ball
+  lands in a bar that cannot grow and the picture quietly stops being
+  true. Three other readings (an auto-growing ceiling, share of the
   tallest column, share of all balls) stay in the dev panel.
 - **Ten pin rows, not twelve, and the bin walls start at 0.69 instead of
   0.80.** Together with a frame a tenth taller than wide that is about

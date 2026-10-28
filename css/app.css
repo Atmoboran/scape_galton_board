@@ -47,6 +47,19 @@
   font: inherit; font-weight: var(--fw-bold); font-size: 13px; line-height: 1;
 }
 .cap-ctl button:active { background: var(--ink); color: var(--paper); }
+/* A column has hit the ceiling: every further ball into it is invisible,
+   and this is the button that gives the picture room again. */
+.cap-ctl button.attn {
+  background: var(--primary); color: var(--primary-ink);
+  animation: cap-attn 1.4s ease-in-out infinite;
+}
+@keyframes cap-attn {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, .55); }
+  50%      { box-shadow: 0 0 0 4px rgba(0, 0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cap-ctl button.attn { animation: none; }
+}
 .cap-ctl button:disabled { opacity: .3; cursor: default; }
 .cap-ctl b {
   font-size: 11px; font-weight: var(--fw-bold); font-variant-numeric: tabular-nums;

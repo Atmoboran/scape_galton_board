@@ -4,7 +4,7 @@
 // around runtime values. Lines marked LOCAL refer to SCAPE° or its region.
 window.TEXTS = {
   lang: 'de',
-  pageTitle: 'Klima ist Statistik – Galton-Brett',
+  pageTitle: 'Klima ist Statistik – Galtonbrett',
   description: 'Ein interaktives Galton-Brett: Setze und entferne Nägel, lass Kugeln fallen und beobachte, wie sich die Verteilung verschiebt und verbreitert – über Wetter, Klima und Klimawandel.',
 
   kit: {
@@ -20,8 +20,8 @@ window.TEXTS = {
   },
 
   poster: {
-    headline: 'Galton&shy;brett',
-    lead: 'Eine Kugel ist Wetter. Der Berg aus vielen Kugeln ist Klima.'
+    headline: 'Klima ist<br>Statistik',
+    lead: 'Das Galtonbrett zeigt die Theorie hinter Wahrscheinlichkeitsverteilungen.'
   },
   stageAria: 'Galton-Brett mit Nägeln und gesammelten Kugeln',
   badge: 'Tippe ins Brett, um Nägel zu setzen oder zu entfernen',

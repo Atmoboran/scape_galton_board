@@ -444,7 +444,10 @@
   // frame -- and when it outgrows it, zooming out is one tap rather than
   // an automatic rescale the visitor did not ask for.
   const CAP_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
-  let colCap = 1000;          // balls in a full column
+  // 200 to open with: the default run is 365 balls, whose tallest column
+  // holds about 90, so the mountain fills a good half of the height from
+  // the first run instead of being a smear someone has to zoom into.
+  let colCap = 200;           // balls in a full column
   const AUTO_START = 10;      // the smallest ceiling the auto mode uses
   // A plain 1-2-5 ladder would leave the tallest column at half height in
   // the worst case -- 51 balls against a ceiling of 100 -- so the picture
@@ -1719,6 +1722,12 @@
     const i = CAP_STEPS.indexOf(colCap);
     capDownBtn.disabled = i <= 0;
     capUpBtn.disabled = i >= CAP_STEPS.length - 1;
+    // Once a column is pegged at the ceiling the picture stops telling the
+    // truth -- every further ball lands in a bar that cannot grow. The one
+    // button that fixes it says so itself rather than leaving the visitor
+    // to work out that the number on the left is the problem.
+    capUpBtn.classList.toggle('attn',
+      scaleMode === 'fixed' && !capUpBtn.disabled && binMax() >= colCap);
     // The other three readings work out their own ceiling, so the stepper
     // would be a dead control there: it says so rather than lying.
     capCtl.classList.toggle('off', scaleMode !== 'fixed');
