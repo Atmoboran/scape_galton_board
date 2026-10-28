@@ -107,6 +107,17 @@
   font-weight: var(--fw-medium); font-size: 18px; line-height: 1; cursor: pointer;
 }
 .sq:disabled { opacity: .35; cursor: default; }
+
+/* Holding a stepper is how it winds, so a long press on any control must
+   not turn into the phone's text selection or "copy" bubble. Nothing in
+   these controls is worth copying -- a "+" or the number between two
+   buttons -- so switching selection off here costs nothing. The readout
+   and the explanatory texts stay selectable. */
+.ctl-row, .cap-ctl, .cap-ctl button, .compare-ctl, .sq, .btn, .compare-chip {
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
 .row output, .row b.val { min-width: 3.4em; text-align: center; font-size: 15px; font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
 
 /* How many balls a Start drops: directly above the Start button, because

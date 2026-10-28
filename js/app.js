@@ -1752,6 +1752,9 @@
     ['pointerup', 'pointerleave', 'pointercancel'].forEach((t2) => {
       btn.addEventListener(t2, stop);
     });
+    // Android opens a context menu on a long press, which would both cover
+    // the button and swallow the pointerup that stops the winding.
+    btn.addEventListener('contextmenu', (ev) => { ev.preventDefault(); });
   }
 
   holdToRepeat(countDownBtn, () => { stepBallCount(-1); }, () => { stepBallCount(-1, BALL_COUNT_FAST); });
