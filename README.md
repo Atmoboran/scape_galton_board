@@ -6,8 +6,10 @@ between "Normalklima" and "Extremklima" to see the three effects of climate
 change on a distribution: shift of the mean, wider spread, many more
 extremes. Up to three runs can be frozen as dashed comparison lines.
 
-Three tasks (365 balls; shift the drop point; extreme climate) fold out of
-a one-line box under the controls, with a running count in its summary.
+Three tasks (365 balls; shift the drop point; extreme climate) sit behind
+a full-width button under the controls that carries the progress, and open
+in the same modal the other SCAPE° exhibits use — except that these check
+themselves off while the visitor plays, so an item has no answer field.
 
 ## Run
 
@@ -109,9 +111,9 @@ Three decisions in `js/app.js` are not obvious from the code alone:
   about half the available height. Nothing rescales by itself: a heap that
   is topped up just keeps growing in the same frame, and zooming out is a
   tap rather than something that happens to you. When a column does reach
-  the ceiling the `+` lights up, because at that point every further ball
-  lands in a bar that cannot grow and the picture quietly stops being
-  true. Three other readings (an auto-growing ceiling, share of the
+  the ceiling the `+` lights up and says "Säule voll", because at that
+  point every further ball lands in a bar that cannot grow and the picture
+  quietly stops being true. Three other readings (an auto-growing ceiling, share of the
   tallest column, share of all balls) stay in the dev panel.
 - **Ten pin rows, not twelve, and the bin walls start at 0.69 instead of
   0.80.** Together with a frame a tenth taller than wide that is about

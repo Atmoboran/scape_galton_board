@@ -1204,19 +1204,34 @@
   // ============ TASKS ============
   // Three small experiments; solving all of them unlocks the Merke box.
   const tasks = SCAPE.tasks(document.getElementById('gb-tasks'));
-  const tasksCount = document.getElementById('tasks-count');
-  const tasksBox = document.getElementById('gb-tasks-box');
+  const tasksProgress = document.getElementById('tasks-progress');
+  const tasksDialog = document.getElementById('tasks-dialog');
+  const tasksOpenBtn = document.getElementById('tasks-open');
+  const tasksCloseBtn = document.getElementById('tasks-close');
 
-  // The summary shows how far along the visitor is even while the list is
-  // folded away -- without it there is nothing to suggest the box is worth
-  // opening, now that the Merke box that used to react is gone.
+  // The button carries the progress, so it says how far along the visitor
+  // is without being opened -- there is nothing else left that reacts,
+  // now that the Merke box is gone.
   function updateTaskCount() {
-    const items = tasksBox.querySelectorAll('.tasks li');
+    const items = tasksDialog.querySelectorAll('.quiz-item');
     let done = 0;
     items.forEach((li) => { if (li.classList.contains('done')) done++; });
-    tasksCount.textContent = done + '/' + items.length;
-    tasksBox.classList.toggle('all-done', done === items.length);
+    tasksProgress.textContent = t('tasks.progress', done, items.length);
+    tasksOpenBtn.classList.toggle('active', done === items.length);
   }
+
+  // Same dialog behaviour as the other SCAPE exhibits: a click on the
+  // dimmed backdrop closes it, Esc does it for free.
+  tasksOpenBtn.addEventListener('click', () => {
+    if (tasksDialog.showModal) tasksDialog.showModal();
+    else tasksDialog.setAttribute('open', '');
+  });
+  const closeTasks = () => {
+    if (tasksDialog.close) tasksDialog.close();
+    else tasksDialog.removeAttribute('open');
+  };
+  tasksCloseBtn.addEventListener('click', closeTasks);
+  tasksDialog.addEventListener('click', (e) => { if (e.target === tasksDialog) closeTasks(); });
   let shiftMark = 0;   // settled count when the drop point last moved
   const TASK_BALLS = 200;
   function checkTasks() {
@@ -1716,6 +1731,7 @@
   const capDownBtn = document.getElementById('cap-down');
   const capValue = document.getElementById('cap-value');
   const capCtl = document.getElementById('cap-ctl');
+  const capAttn = document.getElementById('cap-attn');
 
   function updateCapLabel() {
     capValue.textContent = colCap;
@@ -1726,8 +1742,9 @@
     // truth -- every further ball lands in a bar that cannot grow. The one
     // button that fixes it says so itself rather than leaving the visitor
     // to work out that the number on the left is the problem.
-    capUpBtn.classList.toggle('attn',
-      scaleMode === 'fixed' && !capUpBtn.disabled && binMax() >= colCap);
+    const pegged = scaleMode === 'fixed' && !capUpBtn.disabled && binMax() >= colCap;
+    capUpBtn.classList.toggle('attn', pegged);
+    capAttn.hidden = !pegged;
     // The other three readings work out their own ceiling, so the stepper
     // would be a dead control there: it says so rather than lying.
     capCtl.classList.toggle('off', scaleMode !== 'fixed');

@@ -45,6 +45,7 @@ window.TEXTS = {
 
   cap: {
     unit: 'Kugeln je Säule',
+    full: 'Säule voll',
     more: 'Mehr Kugeln je Säule (herauszoomen)',
     less: 'Weniger Kugeln je Säule (hineinzoomen)'
   },
@@ -106,7 +107,11 @@ window.TEXTS = {
   hint: n => 'Nägel im Brett: ' + n + '. Ein einzelner Wurf sagt nichts, erst viele Kugeln zeigen das Klima. Das Brett ist ein Modell: Echtes Wetter hängt von viel mehr ab als von zehn Nagelreihen.',
 
   tasks: {
+    open: 'Aufgaben',
     title: 'Aufgaben',
+    closeAria: 'Aufgaben schließen',
+    intro: 'Drei Dinge, die das Brett zeigen kann. Sie haken sich von selbst ab, sobald du sie gemacht hast.',
+    progress: (done, total) => done + '/' + total,
     mountain: 'Lass mindestens 365 Kugeln fallen – ein Jahr voller Wettertage. Erkennst du die Glocke?',
     shift: 'Zieh den Trichter oben zur Seite und gib 200 Kugeln dazu. Wohin wandert der Berg?',
     extreme: 'Schalte auf Extremklima und gib 200 Kugeln dazu. Was passiert an den Rändern?',

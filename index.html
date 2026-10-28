@@ -51,6 +51,7 @@
           <span class="compare-unit" data-t="compare.label"></span>
         </div>
         <div class="cap-ctl" id="cap-ctl">
+          <span class="cap-attn" id="cap-attn" data-t="cap.full" hidden></span>
           <button type="button" id="cap-up" data-t-aria="cap.more">+</button>
           <b id="cap-value">200</b>
           <button type="button" id="cap-down" data-t-aria="cap.less">&minus;</button>
@@ -115,16 +116,9 @@
       <div class="info-note" id="controls-help" hidden data-t-html="controls.note"></div>
       <div class="info-note" id="board-help" hidden data-t-html="scenario.note"></div>
 
-      <details class="tasks-box" id="gb-tasks-box">
-        <summary><span data-t="tasks.title"></span><span class="tasks-count" id="tasks-count"></span></summary>
-        <div class="tasks" id="gb-tasks">
-          <ul>
-            <li data-task="mountain"><span class="box"></span><span data-t="tasks.mountain"></span></li>
-            <li data-task="shift"><span class="box"></span><span data-t="tasks.shift"></span></li>
-            <li data-task="extreme"><span class="box"></span><span data-t="tasks.extreme"></span></li>
-          </ul>
-        </div>
-      </details>
+      <button type="button" class="btn tasks-open" id="tasks-open" aria-haspopup="dialog" aria-controls="tasks-dialog">
+        <span data-t="tasks.open"></span> <span class="quiz-progress" id="tasks-progress"></span>
+      </button>
       <p class="hint" id="hint" hidden></p>
 
       <!-- Staff panel: ?dev, Shift+D or the faint (dev) link in the footer. -->
@@ -158,6 +152,21 @@
       </div>
     </div>
   </div>
+
+  <dialog class="quiz-dialog" id="tasks-dialog" aria-labelledby="tasks-title">
+    <div class="quiz-head">
+      <h2 id="tasks-title" data-t="tasks.title"></h2>
+      <button type="button" class="quiz-close" id="tasks-close" data-t-aria="tasks.closeAria">&times;</button>
+    </div>
+    <p class="quiz-intro" data-t="tasks.intro"></p>
+    <div id="gb-tasks">
+      <ol class="quiz-list">
+        <li class="quiz-item" data-task="mountain"><p class="quiz-q" data-t="tasks.mountain"></p><p class="quiz-feedback" data-t="tasks.doneMountain"></p></li>
+        <li class="quiz-item" data-task="shift"><p class="quiz-q" data-t="tasks.shift"></p><p class="quiz-feedback" data-t="tasks.doneShift"></p></li>
+        <li class="quiz-item" data-task="extreme"><p class="quiz-q" data-t="tasks.extreme"></p><p class="quiz-feedback" data-t="tasks.doneExtreme"></p></li>
+      </ol>
+    </div>
+  </dialog>
 
   <div class="topics">
     <details class="topic"><summary data-t="topics.use.title"></summary><div class="topic-body" data-t-html="topics.use.body"></div></details>

@@ -66,6 +66,15 @@
   background: var(--paper); border: var(--line-width) solid var(--line);
   padding: 1px 4px; min-width: 24px; text-align: center;
 }
+/* Two words beside the lit button: the button says where to press, this
+   says why it is lit. Set above it so it reads downwards into the "+". */
+.cap-ctl .cap-attn {
+  order: -1; max-width: 54px; text-align: center; line-height: 1.1;
+  font-size: 8.5px; font-weight: var(--fw-bold); letter-spacing: .06em; text-transform: uppercase;
+  background: var(--primary); color: var(--primary-ink);
+  border: var(--line-width) solid var(--line); padding: 2px 3px;
+}
+.cap-ctl .cap-attn[hidden] { display: none; }
 .cap-ctl .cap-unit {
   font-size: 8px; font-weight: var(--fw-bold); letter-spacing: .06em;
   text-transform: uppercase; text-align: center; max-width: 42px; line-height: 1.15;
@@ -121,20 +130,30 @@
 .ctl-row .info { align-self: center; margin-left: auto; }
 .ctl-row .btn.climate + .btn.icon + .info { margin-left: 0; }
 
-/* The tasks sit where the "nails in the board" sentence used to, folded
-   away behind their own summary with a running count, so they take one
-   line until someone wants them. */
-.tasks-box { border-top: var(--line-width) solid var(--line); border-bottom: var(--line-width) solid var(--line); margin: 4px 0 12px; }
-.tasks-box > summary {
-  cursor: pointer; list-style: none; padding: 10px 2px;
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: var(--fw-medium); letter-spacing: .06em; text-transform: var(--caps);
+/* ---- tasks: button + dialog ----
+   Same shape as the other SCAPE° exhibits: a full-width button with the
+   progress on its right end, opening a modal with a numbered list. Ours
+   check themselves off while the visitor plays, so an item has no answer
+   field -- the solved line below it simply appears once it is done. */
+.tasks-open { width: 100%; min-height: 40px; margin: 8px 0 12px; justify-content: space-between; }
+.quiz-progress { font-weight: var(--fw-light); font-variant-numeric: tabular-nums; }
+.quiz-dialog {
+  width: min(560px, calc(100vw - 24px)); max-height: calc(100svh - 24px); padding: 16px 18px 18px;
+  border: var(--line-width) solid var(--line); border-top: 10px solid var(--accent); background: var(--paper); color: var(--ink);
 }
-.tasks-box > summary::-webkit-details-marker { display: none; }
-.tasks-box > summary::after { content: '+'; margin-left: auto; font-size: 18px; line-height: 1; }
-.tasks-box[open] > summary::after { content: '\2212'; }
-.tasks-count { font-variant-numeric: tabular-nums; opacity: .7; }
-.tasks-box .tasks { padding: 0 2px 10px; }
+.quiz-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.quiz-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.quiz-head h2 { font-weight: var(--fw-light); text-transform: var(--caps); font-size: 28px; line-height: 1; }
+.quiz-close { width: 36px; height: 36px; border: var(--line-width) solid var(--line); background: var(--paper); font-size: 22px; line-height: 1; cursor: pointer; }
+.quiz-intro { font-size: 15px; margin-bottom: 10px; }
+.quiz-list { list-style: none; margin: 0; padding: 0; counter-reset: q; }
+.quiz-item { counter-increment: q; border-top: 1px solid var(--rule-soft); padding: 10px 0; }
+.quiz-q { font-size: 16px; line-height: 1.4; }
+.quiz-q::before { content: counter(q) ". "; font-weight: var(--fw-medium); }
+.quiz-feedback { font-size: 14.5px; line-height: 1.45; margin-top: 8px; }
+.quiz-item:not(.done) .quiz-feedback { display: none; }
+.quiz-item.done .quiz-q { opacity: .6; }
+.quiz-item.done .quiz-feedback { background: var(--c-pale-green); padding: 8px 10px; }
 .count-ctl {
   flex: 0 0 auto; display: flex; align-items: center; gap: 4px;
   margin-right: 2px;
