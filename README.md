@@ -6,8 +6,8 @@ between "Normalklima" and "Extremklima" to see the three effects of climate
 change on a distribution: shift of the mean, wider spread, many more
 extremes. Up to three runs can be frozen as dashed comparison lines.
 
-Three tasks (365 balls; shift the drop point; extreme climate) unlock the
-"Merke" box. Longer explanations sit in collapsible topics below.
+Three tasks (365 balls; shift the drop point; extreme climate) sit with
+the other collapsible topics below the board.
 
 ## Run
 
@@ -37,6 +37,19 @@ js/app.js           board geometry, ball physics, drawing and interaction
 content/texts.de.js every visible text (edit or translate here)
 theme/              the design: font, palette, logo, colours (see theme/README.md)
 ```
+
+## Controls
+
+Under the board, two rows and nothing else. The first is everything that
+makes balls fall — ball count, play/pause, a single ball, reset-the-balls —
+as pictograms, with one `(i)` that names them all; captions would double
+the height of the block and a play triangle needs none. The second is
+everything that changes the board: a **Klima** dropdown (Normalklima /
+Extremklima, or "Angepasst" once nails are edited by hand) and
+reset-the-nails, which is the same reset glyph with nails in it instead of
+a ball. On the board itself: the funnel is the drop point, the ceiling
+stepper sits left of the columns, and the three comparison tiles sit right
+of them, each in the colour of the line it freezes.
 
 ## Layout
 

@@ -1177,8 +1177,7 @@
   const roExtreme = document.getElementById('ro-extreme');
   const hintBadge = SCAPE.badge(document.getElementById('stage-frame'));
   const primaryBtn = document.getElementById('sim-primary');
-  const primaryLabel = document.getElementById('sim-primary-label');
-  const primarySub = document.getElementById('sim-primary-sub');
+
   const primaryIcon = document.getElementById('sim-primary-icon');
   const singleBtn = document.getElementById('sim-single');
   const resetBtn = document.getElementById('sim-reset');
@@ -1218,27 +1217,21 @@
   let mode = IDLE;
   let interacted = false;
 
+  // The button carries no caption any more -- a play triangle and a pause
+  // bar say it themselves -- so the mode lives in the icon, and the words
+  // move to the accessible name, where they are still needed. The ball
+  // count goes in there too, since it is what pressing the button will do.
   function setMode(m) {
     mode = m;
-    if (m === RUNNING) {
-      primaryLabel.textContent = t('primary.pause');
-      primarySub.textContent = t('primary.pauseSub');
-      primaryIcon.innerHTML = ICON_PAUSE;
-    } else if (m === PAUSED) {
-      primaryLabel.textContent = t('primary.resume');
-      primarySub.textContent = t('primary.resumeSub');
-      primaryIcon.innerHTML = ICON_PLAY;
-    } else if (m === DONE) {
-      // Nothing is finished here -- the board simply ran out of queued
-      // balls. The button invites topping the same distribution up again.
-      primaryLabel.textContent = t('primary.more');
-      primarySub.textContent = t('primary.moreSub', ballCount);
-      primaryIcon.innerHTML = ICON_PLAY;
-    } else {
-      primaryLabel.textContent = t('primary.start');
-      primarySub.textContent = t('primary.startSub', ballCount);
-      primaryIcon.innerHTML = ICON_PLAY;
-    }
+    const paused = m === PAUSED;
+    const running = m === RUNNING;
+    primaryIcon.innerHTML = running ? ICON_PAUSE : ICON_PLAY;
+    primaryBtn.setAttribute('aria-label',
+      running ? t('primary.pauseSub')
+        : paused ? t('primary.resumeSub')
+          : m === DONE ? t('primary.moreSub', ballCount)
+            : t('primary.startSub', ballCount));
+    primaryBtn.dataset.mode = m;
   }
 
   // ============ PIN EDITING ============
@@ -1430,7 +1423,17 @@
     dropOffset = next;
     shiftMark = settled;
     updateDropLabel();
+    redrawDropPoint();
+  }
+
+  // The funnel is painted on the board canvas, its grip on the ball canvas
+  // (so the stream passes behind it). Moving the drop point therefore has
+  // to repaint *both*, or the black funnel slides out from under a grip
+  // that stays put -- which is exactly what it did, except when a scenario
+  // switch happened to repaint everything anyway.
+  function redrawDropPoint() {
     drawBoard();
+    drawBalls();
     updateHint();
   }
 
@@ -1675,8 +1678,7 @@
     dropOffset = next;
     shiftMark = settled;
     updateDropLabel();
-    drawBoard();
-    updateHint();
+    redrawDropPoint();
   }
 
   holdToRepeat(dropLeftBtn, () => { stepDrop(-1); });
@@ -1724,19 +1726,10 @@
     capCtl.addEventListener(ev, (e) => { e.stopPropagation(); });
   });
 
-  const axisNote = document.getElementById('axis-note');
-  let axisNoteText = '';
-
-  function updateAxisNote() {
-    updateCapLabel();
-    // The ceiling moves while balls land, so this runs on every readout
-    // update -- but only touches the DOM when the sentence actually
-    // changed, which for a whole batch is a handful of times.
-    const txt = t('axisNote', SCALE_LABELS[scaleMode], scaleCeilingText());
-    if (txt === axisNoteText) return;
-    axisNoteText = txt;
-    axisNote.innerHTML = txt;
-  }
+  // The caption that used to sit under the board is gone: the ceiling is
+  // printed on the stepper itself, right next to the columns it scales,
+  // and a sentence repeating it only pushed the board further up the page.
+  function updateAxisNote() { updateCapLabel(); }
 
   // ============ COMPARISON LINES ============
   const compareChips = Array.prototype.slice.call(compareRow.querySelectorAll('.compare-chip'));
@@ -1769,9 +1762,14 @@
   // URL, the small "(dev)" link at the page foot, or Shift+D, and
   // remembered afterwards so a phone does not have to retype the URL.
   let devOn = false;
-  let timeScale = 1;
+  let timeScale = 3;          // = SPEED_DEFAULT, declared with SPEEDS below
   let devTheory = false;
-  const SPEEDS = [0.25, 0.5, 1, 2, 4, 8];
+  // x3 is the shipped pace: a 365-ball run then takes about half a minute
+  // instead of a minute and a half, which is roughly how long someone
+  // stands in front of an exhibit before losing interest. The slow steps
+  // are there for looking at the collision behaviour frame by frame.
+  const SPEEDS = [0.25, 0.5, 1, 2, 3, 4, 8];
+  const SPEED_DEFAULT = 3;
 
   // How crowded a drop is allowed to get. A batch of 5000 at the exhibit's
   // own pace arrives faster than the board can swallow, and the result is
@@ -1788,8 +1786,8 @@
     devOn = !!on;
     devPanel.hidden = !devOn;
     if (!devOn) {
-      timeScale = 1;
-      devSpeedBtn.textContent = t('dev.speed', 1);
+      timeScale = SPEED_DEFAULT;
+      devSpeedBtn.textContent = t('dev.speed', SPEED_DEFAULT);
     } else {
       updateDevStats();
     }
@@ -2093,7 +2091,6 @@
     updateReadout();
     updateHint();
     requestAnimationFrame(frame);
-    hintBadge.show(t('badge'));
   }
 
   window.addEventListener('resize', relayout);

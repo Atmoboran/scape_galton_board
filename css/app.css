@@ -7,6 +7,11 @@
    taller box simply maps each unit of height to more pixels -- nail
    spacing, ball size and the fall itself are untouched. */
 :root { --board-aspect: 1.1; }
+/* Nothing but the board sits in that column on desktop any more (the
+   caption under it is gone), so the height budget it has to leave free
+   shrinks from 230px to a thin margin -- which is most of what makes the
+   desktop board bigger. */
+:root[data-view="desktop"] { --fit-offset: 88px; }
 #stage-frame.square { aspect-ratio: 1 / var(--board-aspect); }
 #stage-frame { overflow: hidden; }
 #stage {
@@ -69,7 +74,6 @@
 }
 .tt-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
 
-.axis-note { font-size: 13px; line-height: 1.5; color: var(--ink-muted); margin: 8px 0 12px; }
 
 /* ---- small rows of controls ---- */
 .row { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; flex-wrap: wrap; }
@@ -90,21 +94,52 @@
 .seg-row { display: flex; gap: 8px; flex: 1; min-width: 0; }
 .seg-row .btn { flex: 1; padding: 8px 6px; font-size: 12.5px; }
 
-/* comparison tiles */
+/* ---- the two control rows under the board ----
+   One row for everything that makes balls fall, one for everything that
+   changes the board. Icons carry the meaning: a play triangle, a single
+   falling ball, a reset arrow with a ball in it and a reset arrow with
+   three nails in it. The (i) at the end of the first row names them all,
+   so nothing needs a caption that would double the height of the block. */
+.ctl-row { display: flex; align-items: stretch; gap: 8px; margin: 0 0 10px; }
+.ctl-row .btn.icon {
+  flex: 0 0 auto; width: 56px; min-height: 52px; padding: 0; gap: 0;
+}
+.ctl-row .btn.icon svg { width: 24px; height: 24px; }
+.ctl-row .info { align-self: center; margin-left: auto; }
+.count-ctl {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 4px;
+  margin-right: 2px;
+}
+.count-ctl .val { min-width: 2.8em; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
+
+/* The climate picker keeps a word, because "Normalklima" and
+   "Extremklima" are the one thing on this board no pictogram can say. */
+.ctl-row .btn.climate { flex: 1 1 auto; min-width: 0; flex-direction: column; align-items: flex-start; gap: 1px; min-height: 52px; }
+.climate-label { font-size: 9px; letter-spacing: .1em; opacity: .65; }
+.climate-value { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+.climate-value > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#scenario-toggle[aria-expanded="true"] { background: var(--active); color: var(--active-ink); }
+
+/* comparison tiles: in the board frame, beside the lines they stand for */
+.compare-ctl {
+  position: absolute; right: 5px; top: 52%; z-index: 4;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.compare-unit {
+  font-size: 8px; font-weight: var(--fw-bold); letter-spacing: .06em;
+  text-transform: uppercase; opacity: .75; max-width: 46px; text-align: center; line-height: 1.15;
+}
 .compare-chip {
-  flex: none; width: var(--tap); height: var(--tap); display: flex; align-items: center; justify-content: center;
+  flex: none; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
   border: var(--line-width) solid var(--line); background: var(--paper); cursor: pointer; padding: 0;
 }
-.compare-num { font-weight: var(--fw-medium); font-size: 13px; color: var(--ink); }
+.compare-num { font-weight: var(--fw-medium); font-size: 12px; color: var(--ink); }
 .compare-chip.filled { border-style: dashed; }
 .compare-chip[data-slot="0"].filled { background: var(--compare-1); border-color: var(--compare-1); }
 .compare-chip[data-slot="1"].filled { background: var(--compare-2); border-color: var(--compare-2); }
 .compare-chip[data-slot="2"].filled { background: var(--compare-3); border-color: var(--compare-3); }
 .compare-chip.filled .compare-num { color: var(--ink-inverse); }
 
-/* the scenario toggle opens two buttons below it */
-#scenario-toggle { flex: 1; }
-#scenario-toggle[aria-expanded="true"] { background: var(--active); color: var(--active-ink); }
 .opt-caret { font-size: 9px; margin-left: 4px; }
 .scenario-panel { margin: 0 0 10px; }
 .scenario-panel[hidden] { display: none; }
@@ -134,4 +169,3 @@
 .figure .ax { stroke: var(--ink); }
 .figure .t { font-family: var(--font); font-size: 9px; font-weight: 500; fill: var(--ink); }
 #compare-row { margin-top: 12px; }
-:root[data-view="desktop"] .axis-note { width: min(100%, calc(100svh - var(--head-h) - var(--fit-offset, 230px))); min-width: 360px; margin-inline: auto; }

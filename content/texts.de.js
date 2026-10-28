@@ -20,7 +20,7 @@ window.TEXTS = {
   },
 
   poster: {
-    headline: 'Klima ist<br>Statistik',
+    headline: 'Galton&shy;brett',
     lead: 'Eine Kugel ist Wetter. Der Berg aus vielen Kugeln ist Klima.'
   },
   stageAria: 'Galton-Brett mit Nägeln und gesammelten Kugeln',
@@ -33,7 +33,6 @@ window.TEXTS = {
     slotAria: n => 'Vergleichslinie ' + n
   },
 
-  axisNote: (label, ceiling) => 'Y-Achse: <b>' + label + '</b> – volle Höhe = ' + ceiling + '. Tippe oder fahre über eine Säule für die genaue Zahl. Rote gestrichelte Linien: ab hier gilt ein Ergebnis als <b>extrem</b>.',
   scale: {
     auto: 'Kugeln je Säule (mitwachsend)',
     peak: 'Anteil der höchsten Säule',
@@ -50,7 +49,14 @@ window.TEXTS = {
     less: 'Weniger Kugeln je Säule (hineinzoomen)'
   },
 
+  controls: {
+    infoAria: 'Knöpfe erklären',
+    note: '<p><b>▶ Start</b> lässt die eingestellte Zahl Kugeln fallen – während sie fallen wird daraus <b>Pause</b>, danach <b>Mehr</b>: Jeder weitere Start legt Kugeln auf den vorhandenen Berg drauf. Mit <b>− / +</b> daneben stellst du ein, wie viele es pro Start sind.</p><p><b>Einzelne Kugel</b> wirft genau eine – das ist ein Wettertag, und man sieht, dass er nichts beweist.</p><p><b>Kugeln zurücksetzen</b> leert nur den Berg; Nägel, Klima und Einwurf bleiben, wie sie sind. <b>Nägel zurücksetzen</b> räumt umgekehrt das Brett leer – ohne Nagel fällt jede Kugel in dieselbe Mitte, aus lauter Zufall wird ein sicheres Ergebnis.</p><p>Rechts am Brett frieren die drei nummerierten Kästchen die aktuelle Verteilung als gestrichelte Vergleichslinie ein; links stellst du ein, wie viele Kugeln eine volle Säule sind.</p>'
+  },
+
   scenario: {
+    group: 'Klima',
+    wipeAria: 'Alle Nägel entfernen',
     normal: 'Normalklima',
     extrem: 'Extremklima',
     normalBtn: 'Normal­klima',
@@ -86,6 +92,9 @@ window.TEXTS = {
 
   primary: {
     start: 'Start', startSub: n => n + ' Kugeln fallen lassen',
+    startAria: 'Kugeln fallen lassen',
+    singleAria: 'Eine einzelne Kugel fallen lassen',
+    resetAria: 'Kugeln zurücksetzen, Nägel bleiben',
     pause: 'Pause', pauseSub: 'Kugelregen anhalten',
     resume: 'Weiter', resumeSub: 'Kugelregen fortsetzen',
     more: 'Mehr', moreSub: n => n + ' weitere Kugeln zugeben',
@@ -102,10 +111,6 @@ window.TEXTS = {
     doneMountain: 'Geschafft: Aus Zufall wird eine Glocke.',
     doneShift: 'Der ganze Berg ist mitgewandert.',
     doneExtreme: 'Breiter und flacher – mehr Extreme an beiden Rändern.'
-  },
-  merke: {
-    title: 'Merke',
-    text: 'Eine Kugel ist Wetter, der Berg ist Klima. Der Klimawandel verschiebt den Berg und macht ihn breiter. Dadurch werden Extreme viel häufiger – auch wenn einzelne kalte Tage weiter vorkommen.'
   },
 
   dev: {
@@ -149,6 +154,9 @@ window.TEXTS = {
     },
     bell: {
       title: 'Warum ausgerechnet eine Glockenkurve?',
+      intro: '<p>Die Glocke ist kein Zufall und keine Behauptung – man kann sie abzählen. An jedem Nagel teilt sich jeder Weg in zwei gleich wahrscheinliche Hälften. Die Zahl in einem Fach ist, auf wie vielen verschiedenen Wegen man dorthin kommt.</p>',
+      figAria: 'Nagelreihen mit sich verzweigenden Wegen; unten die Zahlen 1, 4, 6, 4, 1 und die Wahrscheinlichkeiten 1/16, 4/16, 6/16, 4/16, 1/16',
+      figCaption: '<b>Mitte = viele Wege, Rand = ein Weg.</b> Nach vier Reihen führen sechs verschiedene Wege in das mittlere Fach, aber nur ein einziger ganz nach links: zweimal links und zweimal rechts lässt sich auf sechs Arten mischen, viermal links nur auf eine. Deshalb ist die Mitte sechsmal so wahrscheinlich wie der Rand – nicht, weil die Kugeln die Mitte „magisch“ suchen. Mit zehn Reihen wird aus 1–4–6–4–1 die Reihe 1–10–45–120–210–252–…, und die Glocke wird immer glatter.',
       body: '<p>Das Galton-Brett, benannt nach dem britischen Forscher Francis Galton (1822–1911), zeigt einen der wichtigsten Sätze der Mathematik: den <b>zentralen Grenzwertsatz</b>. Viele kleine, unabhängige Zufallseinflüsse – hier das Abprallen an jedem Nagel – addieren sich fast immer zu einer Normalverteilung, der berühmten Glockenkurve.</p><p>Genau das passiert in der Atmosphäre: Die Temperatur eines Tages ergibt sich aus unzähligen Einflüssen – Bewölkung, Windrichtung, Bodenfeuchte, Meeresströmungen. Deshalb sind Klimagrößen wie die Tagesmitteltemperatur ungefähr glockenförmig verteilt. Andere Größen, etwa Niederschlagsmengen, sind stark unsymmetrisch – auch das kannst du nachbauen, indem du die Nägel ungleichmäßig setzt.</p><p>Und noch etwas zeigt das Brett: wie viele Kugeln man braucht, um überhaupt eine Form zu erkennen. Mit 20 Kugeln sieht das Ergebnis chaotisch aus, mit 365 wird die Glocke deutlich. Deshalb mitteln Klimaforscherinnen und Klimaforscher über 30 Jahre: Kürzere Zeiträume sind zu verrauscht, um ein Signal vom Zufall zu trennen.</p>'
     },
     use: {

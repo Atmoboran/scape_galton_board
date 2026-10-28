@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Klima ist Statistik – Galton-Brett</title>
+<title>Galtonbrett – Klima ist Statistik</title>
 <meta name="description" content="">
 <!-- Structure only. Design: theme/ · texts: content/texts.de.js · layout: css/ · behaviour: js/ -->
 <script src="js/view.js" data-app="galton"></script>
@@ -37,30 +37,18 @@
 
 <main class="page">
   <div class="lab">
-    <div class="lab-pre">
-      <div class="row">
-        <button type="button" class="btn" id="scenario-toggle" aria-expanded="false" aria-controls="scenario-panel">
-          <span id="scenario-toggle-label" data-t="scenario.normal"></span><span class="opt-caret" aria-hidden="true">&#9662;</span>
-        </button>
-        <button type="button" class="btn" id="tool-wipe" data-t="scenario.wipe"></button>
-        <button type="button" class="info" aria-controls="board-help" data-t-aria="scenario.infoAria"></button>
-      </div>
-      <div class="info-note" id="board-help" hidden data-t-html="scenario.note"></div>
-      <div class="scenario-panel" id="scenario-panel" hidden>
-        <div class="seg-row" id="scenario-row">
-          <button type="button" class="btn scenario-btn active" data-scenario="normal" data-t-html="scenario.normalBtn"></button>
-          <button type="button" class="btn scenario-btn" data-scenario="extrem" data-t-html="scenario.extremBtn"></button>
-        </div>
-      </div>
-
-    </div>
-
     <div class="lab-stage">
       <div class="stage-frame square fit" id="stage-frame">
         <div id="stage" role="img" data-t-aria="stageAria">
           <canvas id="board-canvas"></canvas>
           <canvas id="ball-canvas"></canvas>
           <div class="bin-tooltip" id="bin-tooltip" hidden></div>
+        </div>
+        <div class="compare-ctl" id="compare-row">
+          <button type="button" class="compare-chip" data-slot="0"><span class="compare-num">1</span></button>
+          <button type="button" class="compare-chip" data-slot="1"><span class="compare-num">2</span></button>
+          <button type="button" class="compare-chip" data-slot="2"><span class="compare-num">3</span></button>
+          <span class="compare-unit" data-t="compare.label"></span>
         </div>
         <div class="cap-ctl" id="cap-ctl">
           <button type="button" id="cap-up" data-t-aria="cap.more">+</button>
@@ -75,7 +63,6 @@
         <b id="drop-value" data-t="drop.middle"></b>
         <button type="button" id="drop-right" data-t-aria="drop.right">&plus;</button>
       </div>
-      <p class="axis-note" id="axis-note"></p>
     </div>
 
     <div class="lab-post">
@@ -86,52 +73,46 @@
         <div><span data-t="readout.extremes"></span><b id="ro-extreme">0 %</b></div>
       </div>
 
-      <div class="row count-row">
-        <span class="label" data-t="readout.start"></span>
-        <button type="button" class="sq" id="count-down" data-t-aria="readout.fewer">&minus;</button>
-        <b class="val" id="ball-count-label">365</b>
-        <button type="button" class="sq" id="count-up" data-t-aria="readout.more">&plus;</button>
-      </div>
-
-      <div class="btn-row">
-        <button type="button" class="btn big primary" id="sim-primary">
+      <!-- Everything that makes balls fall. Icons only: a play triangle, a
+           single falling ball and a reset arrow need no caption, and the
+           one (i) at the end names every button in this block. -->
+      <div class="ctl-row">
+        <div class="count-ctl">
+          <button type="button" class="sq" id="count-down" data-t-aria="readout.fewer">&minus;</button>
+          <b class="val" id="ball-count-label">365</b>
+          <button type="button" class="sq" id="count-up" data-t-aria="readout.more">&plus;</button>
+        </div>
+        <button type="button" class="btn icon primary" id="sim-primary" data-t-aria="primary.startAria">
           <svg id="sim-primary-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/></svg>
-          <span><span id="sim-primary-label" data-t="primary.start"></span><span class="sub" id="sim-primary-sub" data-t="primary.startSub"></span></span>
         </button>
-        <button type="button" class="btn big" id="sim-single">
+        <button type="button" class="btn icon" id="sim-single" data-t-aria="primary.singleAria">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="7" r="3" fill="currentColor" stroke="none"/><path d="M12 12v7M9 16l3 3 3-3"/></svg>
-          <span><span data-t="primary.single"></span><span class="sub" data-t="primary.singleSub"></span></span>
         </button>
-        <button type="button" class="btn big" id="sim-reset">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg>
-          <span><span data-t="primary.reset"></span><span class="sub" data-t="primary.resetSub"></span></span>
+        <button type="button" class="btn icon" id="sim-reset" data-t-aria="primary.resetAria">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>
         </button>
+        <button type="button" class="info" aria-controls="controls-help" data-t-aria="controls.infoAria"></button>
       </div>
 
-      <div class="row" id="compare-row">
-        <span class="label" data-t="compare.label"></span>
-        <button type="button" class="compare-chip" data-slot="0"><span class="compare-num">1</span></button>
-        <button type="button" class="compare-chip" data-slot="1"><span class="compare-num">2</span></button>
-        <button type="button" class="compare-chip" data-slot="2"><span class="compare-num">3</span></button>
-        <button type="button" class="info" aria-controls="compare-help" data-t-aria="compare.infoAria"></button>
+      <!-- Everything that changes the board itself. -->
+      <div class="ctl-row">
+        <button type="button" class="btn climate" id="scenario-toggle" aria-expanded="false" aria-controls="scenario-panel">
+          <span class="climate-label" data-t="scenario.group"></span>
+          <span class="climate-value"><span id="scenario-toggle-label" data-t="scenario.normal"></span><span class="opt-caret" aria-hidden="true">&#9662;</span></span>
+        </button>
+        <button type="button" class="btn icon" id="tool-wipe" data-t-aria="scenario.wipeAria">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/><circle cx="9.4" cy="13.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="14.6" cy="13.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="9.6" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
       </div>
-      <div class="info-note" id="compare-help" hidden data-t-html="compare.note"></div>
+      <div class="scenario-panel" id="scenario-panel" hidden>
+        <div class="seg-row" id="scenario-row">
+          <button type="button" class="btn scenario-btn active" data-scenario="normal" data-t-html="scenario.normalBtn"></button>
+          <button type="button" class="btn scenario-btn" data-scenario="extrem" data-t-html="scenario.extremBtn"></button>
+        </div>
+      </div>
+      <div class="info-note" id="controls-help" hidden data-t-html="controls.note"></div>
 
       <p class="hint" id="hint"></p>
-
-      <div class="tasks" id="gb-tasks">
-        <h3 data-t="tasks.title"></h3>
-        <ul>
-          <li data-task="mountain"><span class="box"></span><span data-t="tasks.mountain"></span></li>
-          <li data-task="shift"><span class="box"></span><span data-t="tasks.shift"></span></li>
-          <li data-task="extreme"><span class="box"></span><span data-t="tasks.extreme"></span></li>
-        </ul>
-      </div>
-      <div class="merke locked" data-for="gb-tasks">
-        <h3 data-t="merke.title"></h3>
-        <p data-t="merke.text"></p>
-        <span class="locked-note"></span>
-      </div>
 
       <!-- Staff panel: ?dev, Shift+D or the faint (dev) link in the footer. -->
       <div class="dev-panel" id="dev-panel" hidden>
@@ -215,7 +196,60 @@
         <div data-t-html="topics.change.outro"></div>
       </div>
     </details>
-    <details class="topic"><summary data-t="topics.bell.title"></summary><div class="topic-body" data-t-html="topics.bell.body"></div></details>
+    <details class="topic">
+      <summary data-t="tasks.title"></summary>
+      <div class="topic-body">
+        <div class="tasks" id="gb-tasks">
+          <ul>
+          <li data-task="mountain"><span class="box"></span><span data-t="tasks.mountain"></span></li>
+          <li data-task="shift"><span class="box"></span><span data-t="tasks.shift"></span></li>
+          <li data-task="extreme"><span class="box"></span><span data-t="tasks.extreme"></span></li>
+        </ul>
+        </div>
+      </div>
+    </details>
+    <details class="topic">
+      <summary data-t="topics.bell.title"></summary>
+      <div class="topic-body">
+        <div data-t-html="topics.bell.intro"></div>
+        <figure class="figure">
+          <!-- Where the bell comes from, counted rather than asserted: at
+               every nail the paths split in two, and the number in a slot
+               is how many different ways lead there. The bottom row is
+               the binomial row 1 4 6 4 1 -- the middle bin is six times
+               as likely as an outer one, because six routes end there and
+               only one ends outside. -->
+          <svg viewBox="0 0 320 210" role="img" data-t-aria="topics.bell.figAria">
+            <g class="ax" stroke-width="1.6" fill="none" opacity=".55">
+              <path d="M160,26 L124,60 M160,26 L196,60"/>
+              <path d="M124,60 L88,94 M124,60 L160,94 M196,60 L160,94 M196,60 L232,94"/>
+              <path d="M88,94 L52,128 M88,94 L124,128 M160,94 L124,128 M160,94 L196,128 M232,94 L196,128 M232,94 L268,128"/>
+              <path d="M52,128 L34,150 M52,128 L88,150 M124,128 L88,150 M124,128 L160,150 M196,128 L160,150 M196,128 L232,150 M268,128 L232,150 M268,128 L286,150"/>
+            </g>
+            <g fill="currentColor">
+              <circle cx="160" cy="26" r="6"/>
+              <circle cx="124" cy="60" r="6"/><circle cx="196" cy="60" r="6"/>
+              <circle cx="88" cy="94" r="6"/><circle cx="160" cy="94" r="6"/><circle cx="232" cy="94" r="6"/>
+              <circle cx="52" cy="128" r="6"/><circle cx="124" cy="128" r="6"/><circle cx="196" cy="128" r="6"/><circle cx="268" cy="128" r="6"/>
+            </g>
+            <g class="t" text-anchor="middle" font-size="11">
+              <text x="139" y="46">&#189;</text><text x="183" y="46">&#189;</text>
+            </g>
+            <g class="t" text-anchor="middle" font-size="13" font-weight="700">
+              <text x="34" y="172">1</text><text x="88" y="172">4</text><text x="160" y="172">6</text><text x="232" y="172">4</text><text x="286" y="172">1</text>
+            </g>
+            <g class="t" text-anchor="middle" font-size="10">
+              <text x="34" y="190">1/16</text><text x="88" y="190">4/16</text><text x="160" y="190">6/16</text><text x="232" y="190">4/16</text><text x="286" y="190">1/16</text>
+            </g>
+            <g stroke="currentColor" stroke-width="1.6" opacity=".45">
+              <line x1="16" y1="158" x2="304" y2="158"/>
+            </g>
+          </svg>
+          <figcaption data-t-html="topics.bell.figCaption"></figcaption>
+        </figure>
+        <div data-t-html="topics.bell.body"></div>
+      </div>
+    </details>
   </div>
 </main>
 
