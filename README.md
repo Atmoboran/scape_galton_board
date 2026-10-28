@@ -44,7 +44,8 @@ theme/              the design: font, palette, logo, colours (see theme/README.m
 
 Under the board, two rows and nothing else. The first is everything that
 makes balls fall — ball count, play/pause, a single ball, reset-the-balls —
-as pictograms, with one `(i)` that names them all; captions would double
+as pictograms, with one `(i)` that shows them again and names them (a tap
+on the count steps by one, holding it winds through in fives, 1…2000); captions would double
 the height of the block and a play triangle needs none. The second is
 everything that changes the board: a **Klima** dropdown (Normalklima /
 Extremklima, or "Angepasst" once nails are edited by hand) and
@@ -118,6 +119,16 @@ Three decisions in `js/app.js` are not obvious from the code alone:
   point every further ball lands in a bar that cannot grow and the picture
   quietly stops being true. Three other readings (an auto-growing ceiling, share of the
   tallest column, share of all balls) stay in the dev panel.
+- **A ball flies one arc from nail to nail**, not one per level. Where a
+  nail is missing nothing touches the ball, so it has to sail straight
+  over the empty slot — and an arc is only straight if nothing re-aims it
+  halfway. Re-aiming per level made a ball visibly veer sideways exactly
+  where a nail had been taken out, because the flight to the next level is
+  far shorter in time than a bounce arc (already falling fast, no upward
+  kick) and covering the same sideways distance in it needed a burst of
+  speed. The lattice bookkeeping is untouched — same half-columns in the
+  same order, so the distribution is unchanged (measured over 5 000 balls:
+  σ 1.56 normal, mean +0.98 / σ 1.63 in Extremklima at its drop point).
 - **Ten pin rows, not twelve, and the bin walls start at 0.69 instead of
   0.80.** Together with a frame a tenth taller than wide that is about
   75 % more height for the columns. The simulation lives in a unit space,

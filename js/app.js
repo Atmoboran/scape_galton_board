@@ -512,6 +512,32 @@
     return fallTime(vy0, ROW_DY / 2);
   }
 
+  // Walk the levels ahead with the same rules stepBall uses, and report
+  // where the ball is next touched: the nail it will hit, or the floor of
+  // the board if there is none left. Levels in between are gaps, which
+  // move the ball along but never deflect it.
+  function nextNailAhead(q0, h0, dir) {
+    let hh = h0;
+    for (let q = q0; q < LEVELS; q++) {
+      if (pinAt(q, hh)) return { q: q, h: hh };
+      if (q % 2 === 0) hh += dir;
+    }
+    return { q: LEVELS, h: hh };
+  }
+
+  // One parabola from here to there, however many empty levels lie in
+  // between.
+  function aimAtNextNail(b) {
+    const target = nextNailAhead(b.nextRow, b.h, b.dir);
+    const ty = target.q < LEVELS
+      ? levelY(target.q) - PIN_R - BALL_R * 0.5
+      : BIN_TOP - BALL_R;
+    const tx = halfX(0, target.h);
+    const dy = Math.max(0.001, ty - b.y);
+    b.vx = (tx - b.x) / fallTime(b.vy, dy);
+    if (b.vx > VX_MAX) b.vx = VX_MAX; else if (b.vx < -VX_MAX) b.vx = -VX_MAX;
+  }
+
   function stepBall(b) {
     b.vy += GRAVITY * DT;
     b.x += b.vx * DT;
@@ -526,11 +552,18 @@
       // with other balls nudges a ball off its line, and a hard reset would
       // read as a teleport; the residual offset is capped so a jostled ball
       // can never appear a whole column away from the slot it is really in.
-      const lat = halfX(0, b.h);
-      let off = b.x - lat;
-      const cap = COL_DX * 0.35;
-      if (off > cap) off = cap; else if (off < -cap) off = -cap;
-      b.x = lat + off * 0.5;
+      // ...but only where the ball is actually touched. Mid-flight over an
+      // empty slot its x is legitimately somewhere between two lattice
+      // points -- see the arc below -- and pulling it onto the lattice
+      // there is exactly the sideways shove this used to produce.
+      const touched = pinAt(q, b.h);
+      if (touched) {
+        const lat = halfX(0, b.h);
+        let off = b.x - lat;
+        const cap = COL_DX * 0.35;
+        if (off > cap) off = cap; else if (off < -cap) off = -cap;
+        b.x = lat + off * 0.5;
+      }
 
       // The height is eased the same way, and for a sharper reason: it used
       // to be hard-set to the level. Two balls crossing the same level in
@@ -542,13 +575,15 @@
       // the "sudden jump" half of the same bug. Easing keeps whatever
       // vertical gap contact has already opened up, so a column of balls
       // queues instead of collapsing.
-      const latY = levelY(q) - PIN_R - BALL_R * 0.5;
-      let offY = b.y - latY;
-      const capY = BALL_R * 2.5;
-      if (offY > capY) offY = capY; else if (offY < -capY) offY = -capY;
-      b.y = latY + offY * 0.5;
+      if (touched) {
+        const latY = levelY(q) - PIN_R - BALL_R * 0.5;
+        let offY = b.y - latY;
+        const capY = BALL_R * 2.5;
+        if (offY > capY) offY = capY; else if (offY < -capY) offY = -capY;
+        b.y = latY + offY * 0.5;
+      }
 
-      const nail = pinAt(q, b.h);
+      const nail = touched;
 
       if (nail && q % 2 === 0) {
         // A nail on the row itself: met head-on, so a fair coin sends the
@@ -577,30 +612,28 @@
         b.hop = false;
       }
 
-      const nxt = halfX(0, b.h);
-      if (b.hop) {
-        b.vy = -BOUNCE;
-        b.vx = (nxt - b.x) / hopTime(b.vy);
-      } else {
-        // No nail here, so no upward kick -- the ball is already falling
-        // fast and crosses to the next level in a fraction of the time a
-        // bounce takes. Timing this hop as if the ball were starting from
-        // rest (hopTime(0)) made it about 2.7x too slow sideways, so a
-        // ball that arrived with any sideways speed fell short of the slot
-        // it was heading for and got yanked the rest of the way by the
-        // lattice correction at the next level: the "it gets dragged
-        // sideways instead of falling through" artefact, visible only on
-        // balls that had bounced off a nail just before (one dropping
-        // straight down has nothing to fall short of). Using its actual
-        // downward speed makes the gap a smooth, steep free flight.
-        b.vx = (nxt - b.x) / hopTime(b.vy);
-      }
       b.nextRow++;
+
+      // Aim at the next nail the ball will actually meet, not at the next
+      // level. Where a nail is missing there is nothing to deflect the
+      // ball, so it must fly straight over the empty slot in one arc and
+      // land on the nail below -- and an arc is only straight if nothing
+      // re-aims it halfway. Re-aiming per level is what made a ball
+      // visibly veer sideways exactly where a nail had been taken out:
+      // the flight to the next level is far shorter in time than a bounce
+      // arc (the ball is already falling fast and gets no upward kick), so
+      // covering the same sideways distance in it needed a sudden burst of
+      // sideways speed. The lattice bookkeeping above is untouched -- the
+      // ball still passes through the same half-columns in the same order,
+      // so the distribution is exactly what it was -- this only changes
+      // how it gets there, from a kinked path to a single parabola.
+      if (b.hop) b.vy = -BOUNCE;
       if (b.nextRow >= LEVELS) {
         // A ball that ends between two columns settles into one of them.
         if (((b.h % 2) + 2) % 2 !== 0) b.h += Math.random() < 0.5 ? 1 : -1;
         b.lastTarget = halfX(0, b.h);
       }
+      aimAtNextNail(b);
     }
 
     // --- landing ---
@@ -1680,7 +1713,12 @@
   // rather than the full-width drag slider this used to be: the slider
   // sat exactly where a thumb scrolling the page swept past, and kept
   // getting bumped by accident on the way down to the explainer text.
-  const BALL_COUNT_MIN = 5, BALL_COUNT_MAX = 365, BALL_COUNT_STEP = 5;
+  // One tap is one ball, holding the button winds through in fives: the
+  // exact number matters when someone wants 1 or 2 more, and nobody wants
+  // to tap a thousand times to get past 365 -- which is no longer the
+  // ceiling, only the number the exhibit opens with (a year of weather).
+  const BALL_COUNT_MIN = 1, BALL_COUNT_MAX = 2000;
+  const BALL_COUNT_STEP = 1, BALL_COUNT_FAST = 5;
   let ballCount = 365;
 
   function updateCountLabel() {
@@ -1693,28 +1731,31 @@
     if (mode === IDLE || mode === DONE) setMode(mode);
   }
 
-  function stepBallCount(dir) {
-    ballCount = Math.max(BALL_COUNT_MIN, Math.min(BALL_COUNT_MAX, ballCount + dir * BALL_COUNT_STEP));
+  function stepBallCount(dir, step) {
+    const next = ballCount + dir * (step || BALL_COUNT_STEP);
+    ballCount = Math.max(BALL_COUNT_MIN, Math.min(BALL_COUNT_MAX, next));
     updateCountLabel();
   }
 
-  // Press-and-hold repeats the step, so reaching either end of the range
-  // does not take seventy-odd individual taps.
-  function holdToRepeat(btn, fn) {
+  // Press-and-hold repeats the step. `fast` is what a held button winds
+  // in: a single tap stays at one ball, holding runs through in fives, so
+  // both "one more" and "four hundred more" are reachable from the same
+  // pair of buttons.
+  function holdToRepeat(btn, fn, fast) {
     let t = null;
     function stop() { if (t) { clearInterval(t); clearTimeout(t); t = null; } }
     btn.addEventListener('pointerdown', (ev) => {
       ev.preventDefault();
       fn();
-      t = setTimeout(() => { t = setInterval(fn, 90); }, 420);
+      t = setTimeout(() => { t = setInterval(fast || fn, 90); }, 420);
     });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach((t2) => {
       btn.addEventListener(t2, stop);
     });
   }
 
-  holdToRepeat(countDownBtn, () => { stepBallCount(-1); });
-  holdToRepeat(countUpBtn, () => { stepBallCount(1); });
+  holdToRepeat(countDownBtn, () => { stepBallCount(-1); }, () => { stepBallCount(-1, BALL_COUNT_FAST); });
+  holdToRepeat(countUpBtn, () => { stepBallCount(1); }, () => { stepBallCount(1, BALL_COUNT_FAST); });
 
   // ============ DROP POINT ============
   // Moves the mean without touching the spread, so it can be combined with

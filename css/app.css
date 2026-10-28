@@ -141,6 +141,15 @@
    field -- the solved line below it simply appears once it is done. */
 .tasks-open { width: 100%; min-height: 40px; margin: 8px 0 12px; justify-content: space-between; }
 .quiz-progress { font-weight: var(--fw-light); font-variant-numeric: tabular-nums; }
+
+/* The notes show the buttons they talk about, boxed like the real ones so
+   the eye can match them without reading a name first. */
+.info-note .ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; vertical-align: -7px; margin-right: 3px;
+  border: var(--line-width) solid var(--line); background: var(--paper);
+}
+.info-note .ico svg { width: 15px; height: 15px; }
 .quiz-dialog {
   width: min(560px, calc(100vw - 24px)); max-height: calc(100svh - 24px); padding: 16px 18px 18px;
   border: var(--line-width) solid var(--line); border-top: 10px solid var(--accent); background: var(--paper); color: var(--ink);
