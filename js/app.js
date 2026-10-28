@@ -1321,6 +1321,7 @@
   // is rewritten in place whenever the board changes.
   function updateHint() {
     hint.textContent = t('hint', countPins());
+    updateWipeButton();
     const slot = document.getElementById('board-help-count');
     if (slot) slot.textContent = countPins();
   }
@@ -1577,10 +1578,42 @@
   // so it keeps the heap: the whole point is to watch the pile bend
   // towards the new layout -- and an empty board is its own small lesson,
   // since with nothing to deflect them every ball lands in one bin.
+  //
+  // The same button puts the nails back. Once the board is empty there is
+  // nothing left to take away, so a second press would be a dead control;
+  // instead it undoes the first one, exactly, down to a hand-placed nail.
+  // That makes the empty board something a visitor dares to try, rather
+  // than a state they have to rebuild their way out of.
+  let pinsBeforeWipe = null;
+  let scenarioBeforeWipe = null;
+
+  function updateWipeButton() {
+    const empty = countPins() === 0;
+    toolWipeBtn.classList.toggle('restore', empty);
+    toolWipeBtn.setAttribute('aria-label',
+      t(empty ? 'scenario.restoreAria' : 'scenario.wipeAria'));
+  }
+
   toolWipeBtn.addEventListener('click', () => {
-    pins = emptyPins();
+    if (countPins() === 0) {
+      // Nothing remembered (the board was emptied nail by nail, or this is
+      // a fresh load): fall back to the climate the picker is showing.
+      pins = pinsBeforeWipe
+        ? pinsBeforeWipe
+        : scenarioPins(scenarioName === 'custom' ? 'normal' : scenarioName);
+      if (scenarioBeforeWipe) {
+        scenarioName = scenarioBeforeWipe;
+        scenarioSelect.value = scenarioName;
+      }
+      pinsBeforeWipe = null;
+      scenarioBeforeWipe = null;
+    } else {
+      pinsBeforeWipe = pins.map((row) => row.slice());
+      scenarioBeforeWipe = scenarioName;
+      pins = emptyPins();
+      markCustomScenario();
+    }
     dismissHint();
-    markCustomScenario();
     drawBoard();
     updateHint();
   });

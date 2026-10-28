@@ -55,7 +55,10 @@ state the board can be in, never something to choose. The first board
 button resets to Normalklima (full triangle, drop point centred, heap
 cleared) — the exhibit's opening state — and the second strips every nail
 off the board, which is its own small lesson: with nothing to deflect
-them, every ball lands in the same bin. On the board itself: the funnel is the drop
+them, every ball lands in the same bin. Pressed again on an empty board
+it puts the nails back exactly as they were, hand-placed ones included —
+otherwise it would be a dead control at precisely the moment a visitor
+wants a way out of the state it just created. On the board itself: the funnel is the drop
 point, fullscreen sits top right, and the two things you set about the
 columns sit on either side of them — the ceiling stepper bottom left, the
 three comparison tiles bottom right, each in the colour of the line it

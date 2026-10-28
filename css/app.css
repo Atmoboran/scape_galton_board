@@ -127,6 +127,10 @@
   flex: 0 0 auto; width: 56px; min-height: 52px; padding: 0; gap: 0;
 }
 .ctl-row .btn.icon svg { width: 24px; height: 24px; }
+/* The wipe button swaps to a "put them back" face once the board is bare,
+   because at that point there is nothing left for it to take away. */
+#tool-wipe .ico-restore, #tool-wipe.restore .ico-wipe { display: none; }
+#tool-wipe.restore .ico-restore { display: block; }
 .ctl-row .info { align-self: center; margin-left: auto; }
 .ctl-row .btn.climate + .btn.icon + .info { margin-left: 0; }
 
