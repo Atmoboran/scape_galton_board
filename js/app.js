@@ -1191,10 +1191,8 @@
   const devStats = document.getElementById('dev-stats');
   const devSpeedBtn = document.getElementById('dev-speed');
   const devCollideBtn = document.getElementById('dev-collide');
-  const scenarioRow = document.getElementById('scenario-row');
-  const scenarioToggleBtn = document.getElementById('scenario-toggle');
-  const scenarioToggleLabel = document.getElementById('scenario-toggle-label');
-  const scenarioPanel = document.getElementById('scenario-panel');
+  const scenarioSelect = document.getElementById('scenario-select');
+  const toolResetBoardBtn = document.getElementById('tool-reset-board');
   const compareRow = document.getElementById('compare-row');
   const stageCard = document.getElementById('stage-frame');
   const binTooltip = document.getElementById('bin-tooltip');
@@ -1557,9 +1555,10 @@
   });
 
   // ============ TOOL / SCENARIO CONTROLS ============
-  // Clearing the board is a hand edit like any other, only faster, so it
-  // keeps the heap: the whole point is to watch the pile bend towards the
-  // new layout. Reset is there for a clean slate.
+  // Stripping the board bare is a hand edit like any other, only faster,
+  // so it keeps the heap: the whole point is to watch the pile bend
+  // towards the new layout -- and an empty board is its own small lesson,
+  // since with nothing to deflect them every ball lands in one bin.
   toolWipeBtn.addEventListener('click', () => {
     pins = emptyPins();
     dismissHint();
@@ -1568,14 +1567,7 @@
     updateHint();
   });
 
-  const scenarioBtns = Array.prototype.slice.call(scenarioRow.querySelectorAll('.scenario-btn'));
-  const SCENARIO_LABELS = { normal: t('scenario.normal'), extrem: t('scenario.extrem') };
   let scenarioName = 'normal';
-
-  function setScenarioPanelOpen(open) {
-    scenarioPanel.hidden = !open;
-    scenarioToggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  }
 
   // Extremklima is a climate, not just a nail pattern: a warmer world has
   // both a shifted mean and a wider spread, so switching to it moves the
@@ -1599,11 +1591,7 @@
     dropOffset = name === 'extrem' ? EXTREME_DROP : 0;
     shiftMark = settled;
     updateDropLabel();
-    scenarioBtns.forEach((b) => {
-      b.classList.toggle('active', b.getAttribute('data-scenario') === name);
-    });
-    scenarioToggleLabel.textContent = SCENARIO_LABELS[name];
-    setScenarioPanelOpen(false);
+    scenarioSelect.value = name;
     clearBalls();
     drawBoard();
     drawBalls();
@@ -1612,21 +1600,28 @@
     setMode(IDLE);
   }
 
+  // Hand-editing nails is not a climate, so the picker says so. The
+  // "Angepasst" entry is hidden from the list -- it is a state the board
+  // can be in, never something to choose.
   function markCustomScenario() {
-    scenarioBtns.forEach((b) => { b.classList.remove('active'); });
-    scenarioToggleLabel.textContent = t('scenario.custom');
+    scenarioSelect.value = 'custom';
     scenarioName = 'custom';
   }
 
-  scenarioBtns.forEach((b) => {
-    b.addEventListener('click', () => {
-      setScenario(b.getAttribute('data-scenario'));
-      dismissHint();
-    });
+  // A plain <select>, so more climates are one <option> away rather than
+  // another button fighting for width in the row.
+  scenarioSelect.addEventListener('change', () => {
+    if (scenarioSelect.value === 'custom') { scenarioSelect.value = scenarioName; return; }
+    setScenario(scenarioSelect.value);
+    dismissHint();
   });
 
-  scenarioToggleBtn.addEventListener('click', () => {
-    setScenarioPanelOpen(scenarioPanel.hidden);
+  // Back to the board the exhibit opens with: Normalklima's full triangle,
+  // drop point in the middle, heap cleared. The wipe button beside it does
+  // the opposite -- it takes every nail away.
+  toolResetBoardBtn.addEventListener('click', () => {
+    setScenario('normal');
+    dismissHint();
   });
 
   // ============ BALL COUNT ============

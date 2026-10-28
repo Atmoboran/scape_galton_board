@@ -131,12 +131,27 @@
 .count-unit { font-size: 8px; font-weight: var(--fw-bold); letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 
 /* The climate picker keeps a word, because "Normalklima" and
-   "Extremklima" are the one thing on this board no pictogram can say. */
-.ctl-row .btn.climate { flex: 1 1 auto; min-width: 0; flex-direction: column; align-items: flex-start; gap: 1px; min-height: 52px; }
-.climate-label { font-size: 9px; letter-spacing: .1em; opacity: .65; }
-.climate-value { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
-.climate-value > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#scenario-toggle[aria-expanded="true"] { background: var(--active); color: var(--active-ink); }
+   "Extremklima" are the one thing on this board no pictogram can say --
+   and it is a plain <select>, so a third or fourth climate is one option
+   in content/texts.de.js away rather than another button in the row. */
+.climate-field {
+  flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1px;
+  min-height: 52px; padding: 6px 10px;
+  border: var(--line-width) solid var(--line); border-radius: var(--radius); background: var(--paper);
+}
+.climate-field:focus-within { outline: 2px solid var(--line); outline-offset: 1px; }
+.climate-label { font-size: 9px; letter-spacing: .1em; opacity: .65; text-transform: var(--caps); }
+.climate-field select {
+  appearance: none; -webkit-appearance: none;
+  border: 0; background: transparent; padding: 0 18px 0 0; margin: 0; width: 100%; min-width: 0;
+  font: inherit; font-size: 14px; font-weight: var(--fw-medium); letter-spacing: .04em;
+  text-transform: var(--caps); color: var(--ink); cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 6px top 50%, right 1px top 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+.climate-field select:focus { outline: none; }
 
 /* comparison tiles: in the board frame, beside the lines they stand for */
 /* Bottom right, exactly opposite the ceiling stepper at bottom left: the

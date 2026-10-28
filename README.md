@@ -46,8 +46,14 @@ as pictograms, with one `(i)` that names them all; captions would double
 the height of the block and a play triangle needs none. The second is
 everything that changes the board: a **Klima** dropdown (Normalklima /
 Extremklima, or "Angepasst" once nails are edited by hand) and
-reset-the-nails, which is the same reset glyph with nails in it instead of
-a ball, and its own `(i)`. On the board itself: the funnel is the drop
+two board buttons and its own `(i)`. The climate is a plain `<select>`,
+so a third climate is one `<option>` away rather than another button
+fighting for width; "Angepasst" is in the list but hidden, because it is a
+state the board can be in, never something to choose. The first board
+button resets to Normalklima (full triangle, drop point centred, heap
+cleared) — the exhibit's opening state — and the second strips every nail
+off the board, which is its own small lesson: with nothing to deflect
+them, every ball lands in the same bin. On the board itself: the funnel is the drop
 point, fullscreen sits top right, and the two things you set about the
 columns sit on either side of them — the ceiling stepper bottom left, the
 three comparison tiles bottom right, each in the colour of the line it
