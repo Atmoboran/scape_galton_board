@@ -20,7 +20,7 @@ window.TEXTS = {
   },
 
   poster: {
-    headline: 'Klima ist<br>Statistik',
+    headline: 'Klima ist Statistik',
     lead: 'Wetter ist Chaos in Mustern – dem Klima. Das Galtonbrett zeigt diesen Zusammenhang.'
   },
   stageAria: 'Galton-Brett mit Nägeln und gesammelten Kugeln',
