@@ -21,7 +21,7 @@ window.TEXTS = {
 
   poster: {
     headline: 'Klima ist<br>Statistik',
-    lead: 'Das Galtonbrett zeigt die Theorie hinter Wahrscheinlichkeitsverteilungen.'
+    lead: 'Wetter ist Chaos in Mustern – dem Klima. Das Galtonbrett zeigt diesen Zusammenhang.'
   },
   stageAria: 'Galton-Brett mit Nägeln und gesammelten Kugeln',
   badge: 'Tippe ins Brett, um Nägel zu setzen oder zu entfernen',
