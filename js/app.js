@@ -1838,14 +1838,16 @@
   // URL, the small "(dev)" link at the page foot, or Shift+D, and
   // remembered afterwards so a phone does not have to retype the URL.
   let devOn = false;
-  let timeScale = 3;          // = SPEED_DEFAULT, declared with SPEEDS below
+  let timeScale = 2;          // = SPEED_DEFAULT, declared with SPEEDS below
   let devTheory = false;
-  // x3 is the shipped pace: a 365-ball run then takes about half a minute
-  // instead of a minute and a half, which is roughly how long someone
-  // stands in front of an exhibit before losing interest. The slow steps
-  // are there for looking at the collision behaviour frame by frame.
+  // x2 is the shipped pace. x3 read as hectic -- balls arrived before the
+  // eye had followed the last one -- and x2 is the next rung down rather
+  // than the 2.1 that "30% slower" works out to exactly: the difference is
+  // a twentieth, and a ladder of round numbers is worth more in the dev
+  // panel than a decimal nobody can tell apart. The slow steps are there
+  // for looking at the collision behaviour frame by frame.
   const SPEEDS = [0.25, 0.5, 1, 2, 3, 4, 8];
-  const SPEED_DEFAULT = 3;
+  const SPEED_DEFAULT = 2;
 
   // How crowded a drop is allowed to get. A batch of 5000 at the exhibit's
   // own pace arrives faster than the board can swallow, and the result is
