@@ -62,13 +62,14 @@ window.TEXTS = {
     wipeAria: 'Alle Nägel entfernen',
     restoreAria: 'Nägel wieder einsetzen',
     normal: 'Normalklima',
-    extrem: 'Extremklima',
-    normalBtn: 'Normal­klima',
-    extremBtn: 'Extrem­klima',
+    warm: 'Wärmeres Klima',
+    cold: 'Kälteres Klima',
+    extrem: 'Extremeres Klima',
+    mild: 'Weniger extremes Klima',
     custom: 'Angepasst',
     wipe: 'Alle entfernen',
     infoAria: 'Brett, Klima und Nägel erklären',
-    note: '<p>Auf eine <b>leere Stelle</b> tippen setzt einen Nagel, auf einen <b>vorhandenen</b> entfernt ihn. Aktuell: <b id="board-help-count">55</b>.</p><p>Wo ein Nagel fehlt, fällt die Kugel einfach weiter bis zum nächsten Nagel darunter – eine Entscheidung weniger, der Berg wird schmaler.</p><p><b>Normalklima</b>: alle Kugeln fallen an derselben Stelle ein. <b>Extremklima</b>: der Trichter wird unruhig – die Kugeln fallen über fünf Säulen verteilt ein, eine Säule nach rechts versetzt. Der Berg wandert <i>und</i> wird breiter.</p><p><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/><circle cx="9.4" cy="13.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="14.6" cy="13.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="9.6" r="1.5" fill="currentColor" stroke="none"/></svg></span> zurück auf Normalklima. <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5L20.5 19.5H3.5z"/><path d="M8 9.5l8 8M16 9.5l-8 8" stroke-width="1.6"/></svg></span> räumt alle Nägel ab – noch einmal gedrückt holt es dieselben zurück. Ohne Nagel fällt jede Kugel ins selbe Fach.</p>'
+    note: '<p>Auf einen <b>leeren Kreis</b> tippen setzt einen Nagel, auf einen <b>Nagel</b> entfernt ihn. Aktuell: <b id="board-help-count">21</b>.</p><p>Jeder Nagel ist eine Entscheidung links oder rechts. Mehr Nägel auf dem Weg: breiterer Berg, mehr Extreme. Weniger Nägel: schmaler.</p><p><b>Normalklima</b>: kleines Dreieck. <b>Wärmer</b> / <b>Kälter</b>: dasselbe Dreieck mit Trichter eine Säule weiter rechts bzw. links – der Berg wandert, seine Form bleibt. <b>Extremer</b>: alle leeren Kreise aufgefüllt – der Berg wird breiter. <b>Weniger extrem</b>: ein noch kleineres Dreieck – schmaler.</p><p><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/><circle cx="9.4" cy="13.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="14.6" cy="13.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="9.6" r="1.5" fill="currentColor" stroke="none"/></svg></span> zurück auf Normalklima. <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5L20.5 19.5H3.5z"/><path d="M8 9.5l8 8M16 9.5l-8 8" stroke-width="1.6"/></svg></span> räumt alle Nägel ab – noch einmal gedrückt holt es dieselben zurück. Ohne Nagel fällt jede Kugel ins selbe Fach.</p>'
   },
 
   drop: {
@@ -76,7 +77,7 @@ window.TEXTS = {
     left: 'Einwurf eine Säule nach links',
     right: 'Einwurf eine Säule nach rechts',
     middle: 'Mitte',
-    note: '<p>Zieh den schwarzen Trichter oben am Brett nach links oder rechts, um bis zu zwei Säulen. Der ganze Berg wandert eins zu eins mit: eine Säule weiter rechts heißt ein Feld wärmerer Mittelwert – die <b>Verschiebung des Mittels</b>.</p><p><b>Extremklima</b> schiebt den Trichter selbst eine Säule nach rechts – verschobener Mittelwert und größere Streuung zugleich, so wie es echte Messreihen zeigen. Zurück auf <b>Mitte</b> gestellt zeigt Extremklima nur die größere Streuung, ohne Verschiebung.</p><p>Weit außen fällt eine Kugel erst ein paar Reihen, bevor das Dreieck breit genug ist – diese Reihen fehlen ihr als Entscheidungen, die Streuung wird etwas kleiner. Der Mittelwert bleibt exakt.</p>'
+    note: '<p>Zieh den schwarzen Trichter oben am Brett nach links oder rechts, um bis zu zwei Säulen. Der ganze Berg wandert eins zu eins mit: eine Säule weiter rechts heißt ein Feld wärmerer Mittelwert – die <b>Verschiebung des Mittels</b>.</p><p><b>Wärmeres</b> und <b>Kälteres Klima</b> setzen den Trichter samt Nageldreieck eine Säule nach rechts bzw. links. Kombiniert mit mehr Nägeln zeigt das Brett beides zugleich: verschobenen Mittelwert und größere Streuung.</p><p>Weit außen fällt eine Kugel erst ein paar Reihen, bevor das Dreieck breit genug ist – diese Reihen fehlen ihr als Entscheidungen, die Streuung wird etwas kleiner. Der Mittelwert bleibt exakt.</p>'
   },
 
   readout: {
@@ -115,7 +116,7 @@ window.TEXTS = {
     progress: (done, total) => done + '/' + total,
     mountain: 'Lass mindestens 365 Kugeln fallen – ein Jahr voller Wettertage. Erkennst du die Glocke?',
     shift: 'Zieh den Trichter oben zur Seite und gib 200 Kugeln dazu. Wohin wandert der Berg?',
-    extreme: 'Schalte auf Extremklima und gib 200 Kugeln dazu. Was passiert an den Rändern?',
+    extreme: 'Füll alle leeren Kreise mit Nägeln auf (oder wähle „Extremeres Klima“) und gib 200 Kugeln dazu. Was passiert an den Rändern?',
     doneMountain: 'Geschafft: Aus Zufall wird eine Glocke.',
     doneShift: 'Der ganze Berg ist mitgewandert.',
     doneExtreme: 'Breiter und flacher – mehr Extreme an beiden Rändern.'
@@ -158,7 +159,7 @@ window.TEXTS = {
       cold: 'KALT',
       hot: 'HEISS',
       threshold: 'EXTREM-SCHWELLE',
-      outro: '<p>Alle drei Effekte kannst du am Brett nachstellen. Der verschiebbare <b>Trichter</b> ändert die Stelle, an der die Kugeln hineinfallen – der ganze Berg wandert mit, das ist Effekt 1. <b>Extremklima</b> macht außerdem den Trichter unruhig: Die Kugeln fallen nicht mehr alle an derselben Stelle ein, sondern über fünf Säulen verteilt – unruhigere Ausgangsbedingungen, breiterer Berg, Effekt 2. Beide zusammen ergeben Effekt 3: Schon ein Feld Verschiebung plus größere Streuung vervielfacht die Kugeln jenseits der roten Linien.</p>'
+      outro: '<p>Alle drei Effekte kannst du am Brett nachstellen. Der verschiebbare <b>Trichter</b> ändert die Stelle, an der die Kugeln hineinfallen – der ganze Berg wandert mit, das ist Effekt 1. <b>Mehr Nägel</b> – das kleine Dreieck bis oben aufgefüllt – bedeuten mehr Zufallsentscheidungen pro Kugel: breiterer Berg, Effekt 2. Beide zusammen ergeben Effekt 3: Schon ein Feld Verschiebung plus größere Streuung vervielfacht die Kugeln jenseits der roten Linien.</p>'
     },
     bell: {
       title: 'Warum ausgerechnet eine Glockenkurve?',

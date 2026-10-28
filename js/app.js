@@ -94,11 +94,13 @@
   // r+1 is reachable by any ball that has already been thrown outward once.
   // Dev mode opens two more columns beyond that, for experimenting with
   // configurations no ordinary chain of deflections would ever reach.
+  // Nails go on the full triangle's own places and nowhere else. Places
+  // between two rows used to be offered too; under honest rules a nail
+  // there only swaps one decision for another, so it changed nothing a
+  // visitor could see in the result, and the extra circles cluttered the
+  // board.
   function slotUsable(q, j) {
-    const h = j - HOFF;
-    const r = levelReach(q);
-    const maxH = r + 1 + (devOn ? 2 : 0);
-    return (((h - r) % 2) + 2) % 2 === 0 && Math.abs(h) <= maxH;
+    return isDefaultSlot(q, j - HOFF);
   }
 
   // The board's own nails: the classic triangle on the even levels.
@@ -144,28 +146,43 @@
   // every ball re-deciding left/right ten times, which is exactly what
   // makes it binomial (sigma = sqrt(10)/2 = 1.58 columns).
   //
-  // Extremklima keeps every nail. Its wider spread comes from the funnel
-  // instead: the balls no longer all enter at one point but anywhere
-  // across five columns (see dropScatter), and its centre moves one column
-  // to the warm side (see setScenario).
+  // The climates. Every nail is a fair coin and a missing one lets the
+  // ball fall on, so the spread is set by how many nails a ball meets on
+  // its way down, and the mean by where it starts. Each climate changes
+  // exactly one of the two, in one direction:
   //
-  // Why not from the nails. With every nail a fair coin and every gap a
-  // straight fall -- which is what a real board does -- the spread is set
-  // by how many nails a ball meets, and a full triangle already gives it
-  // one per row. Taking nails out removes decisions and *narrows* the
-  // mountain (exact: sigma 1.58 -> 1.33 for the old thinned pattern, with
-  // a lumpy histogram); adding nails between the rows only swaps one
-  // decision for another and changes nothing at all. An earlier version
-  // got a wider mountain out of a thinned board only because a gap kept a
-  // ball moving sideways half a column per row -- the long, flat throws
-  // that no real ball makes.
+  //   Normalklima            small triangle, rows 5-10      sigma 1.22
+  //   Waermeres Klima        the same, one column right     mean +1.00, sigma 1.22
+  //   Kaelteres Klima        the same, one column left      mean -1.00, sigma 1.22
+  //   Extremeres Klima       the full triangle, rows 1-10   sigma 1.58
+  //   Weniger extremes Klima smaller still, rows 7-10       sigma 1.00
   //
-  // Exact, with the funnel scattering two columns either way:
-  //   Normalklima, centre       sigma 1.58  extremes  2.1%  peak 24.6%
-  //   Extremklima, centre       sigma 1.97  extremes  6.2%  peak 17.4%
-  //   Extremklima, centre +1    sigma 1.95  extremes 10.3%  mean +1.00
-  function scenarioPins() {
-    return defaultPins();
+  // Warmer and colder move the small triangle along with the funnel. The
+  // funnel alone would make the ball hit the triangle on its flank and
+  // miss its top rows -- two decisions fewer, so a warmer climate would
+  // also come out narrower (sigma 1.00, indistinguishable from "weniger
+  // extrem"), and the shift of the mean would not be shown on its own.
+  // A small triangle's apex has to sit on an odd-numbered row (rows 1, 5,
+  // 7 ... counted from 1), where the centre has a nail slot; that is why
+  // the steps are 10, 6 and 4 rows.
+  const FULL_NAILS = ROWS * (ROWS + 1) / 2;   // the full triangle: 55
+  const CLIMATES = {
+    normal: { top: 4, shift: 0 },
+    warm:   { top: 4, shift: 2 },
+    cold:   { top: 4, shift: -2 },
+    extrem: { top: 0, shift: 0 },
+    mild:   { top: 6, shift: 0 }
+  };
+
+  function scenarioPins(name) {
+    const c = CLIMATES[name] || CLIMATES.normal;
+    const p = defaultPins();
+    for (let r = 0; r < ROWS; r++) {
+      for (let h = -r; h <= r; h += 2) {
+        p[2 * r][h + HOFF] = r >= c.top && Math.abs(h - c.shift) <= r - c.top;
+      }
+    }
+    return p;
   }
 
   function countPins() {
@@ -206,14 +223,11 @@
   // cheap enough to recompute on every redraw while the toggle is on and
   // always be current with whatever nails are on the board right now.
   function computeTheory() {
-    // Start from every slot the funnel can drop a ball on, weighted as
-    // dropSlot() weights them -- it used to start from the apex no matter
-    // where the funnel was, so the curve ignored the drop point.
+    // Start where the funnel drops the balls -- it used to start from the
+    // apex no matter where the funnel was, so the curve ignored the drop
+    // point.
     let dist = {};
-    const starts = dropSlots();
-    for (let si = 0; si < starts.length; si++) {
-      dist[starts[si]] = (dist[starts[si]] || 0) + 1 / starts.length;
-    }
+    dist[dropSlot()] = 1;
     for (let q = 0; q < LEVELS; q++) {
       const next = {};
       for (const key in dist) {
@@ -318,24 +332,7 @@
   // the mean then tracks the stepper exactly in both climates.
   function dropX() { return halfX(0, dropOffset); }
 
-  // How far either side of the drop point a ball may enter, in half-
-  // columns (2 per column). Zero for Normalklima: every ball starts at the
-  // same place. Extremklima sets it to two columns either way -- an
-  // unsettled funnel, the one honest way to widen the spread without
-  // changing the board: the board itself can only add spread by adding
-  // decisions, and every ball already meets one nail per row.
-  let dropScatter = 0;
-
-  // Every slot a ball can enter on, equally likely.
-  function dropSlots() {
-    const out = [];
-    for (let d = -dropScatter; d <= dropScatter; d += 2) out.push(dropOffset + d);
-    return out;
-  }
-  function dropSlot() {
-    const slots = dropSlots();
-    return slots[Math.floor(Math.random() * slots.length)];
-  }
+  function dropSlot() { return dropOffset; }
 
   function spawnBall() {
     // h = the ball's position in half-columns, advanced level by level.
@@ -898,12 +895,8 @@
     boardCtx.beginPath();
     boardCtx.moveTo(0.10 * W, 0);
     boardCtx.lineTo(0.90 * W, 0);
-    // The mouth opens up as far as the funnel scatters the balls, so an
-    // unsettled Extremklima funnel is visibly wider rather than just
-    // behaving differently.
-    const mouthHalf = 0.065 + dropScatter * COL_DX / 2;
-    boardCtx.lineTo((mouth + mouthHalf) * W, FUNNEL_Y * H);
-    boardCtx.lineTo((mouth - mouthHalf) * W, FUNNEL_Y * H);
+    boardCtx.lineTo((mouth + 0.065) * W, FUNNEL_Y * H);
+    boardCtx.lineTo((mouth - 0.065) * W, FUNNEL_Y * H);
     boardCtx.closePath();
     boardCtx.fill();
 
@@ -949,31 +942,22 @@
       }
     }
 
-    // --- ghost markers for the empty in-between (diagonal) slots ---
-    // Default, on-row slots are easy to spot even empty: they're simply a
-    // missing dot in the otherwise-familiar triangle. The in-between slots
-    // have no such pattern to lean on, so an empty but usable one gets a
-    // faint placeholder -- solid for the ones every visitor can tap, and
-    // (only while dev mode is open) a dashed, redder one further out for
-    // the experimental positions no ordinary ball would ever reach.
+    // --- placeholders for the nails that are not there ---
+    // Every place of the full triangle that is empty gets a faint ring: in
+    // Normalklima these are exactly the nails that make the climate more
+    // extreme, and a nail tapped away leaves its ring behind instead of
+    // simply vanishing.
     boardCtx.lineWidth = 1;
-    for (let gq = 1; gq < LEVELS; gq += 2) {
-      const gr = levelReach(gq);
+    boardCtx.strokeStyle = GC.slot;
+    for (let gq = 0; gq < LEVELS; gq += 2) {
       for (let gj = 0; gj < HSPAN; gj++) {
-        if (pins[gq][gj]) continue;
-        if (!slotUsable(gq, gj)) continue;
-        const gh = gj - HOFF;
-        const extended = Math.abs(gh) > gr + 1;
-        if (extended && !devOn) continue;
+        if (pins[gq][gj] || !isDefaultSlot(gq, gj - HOFF)) continue;
         const gp = pinPos[gq][gj];
-        boardCtx.strokeStyle = extended ? GC.slotActive : GC.slot;
-        boardCtx.setLineDash(extended ? [2, 2] : []);
         boardCtx.beginPath();
         boardCtx.arc(gp.x * W, gp.y * H, pr * 0.6, 0, Math.PI * 2);
         boardCtx.stroke();
       }
     }
-    boardCtx.setLineDash([]);
 
     // --- bin walls ---
     boardCtx.strokeStyle = INK;
@@ -1247,7 +1231,9 @@
   function checkTasks() {
     if (settled >= 365) tasks.done('mountain');
     if (dropOffset !== 0 && settled - shiftMark >= TASK_BALLS) tasks.done('shift');
-    if (scenarioName === 'extrem' && settled >= TASK_BALLS) tasks.done('extreme');
+    // Filling every empty ring by hand counts as much as picking the
+    // preset -- building the more extreme climate yourself is the point.
+    if ((scenarioName === 'extrem' || countPins() === FULL_NAILS) && settled >= TASK_BALLS) tasks.done('extreme');
     updateTaskCount();
   }
 
@@ -1630,28 +1616,15 @@
 
   let scenarioName = 'normal';
 
-  // Extremklima is a climate, not just a nail pattern: a warmer world has
-  // both a shifted mean and a wider spread, so switching to it moves the
-  // drop point one column to the warm side as well, and switching back to
-  // Normalklima returns it to the middle. The Einwurf stepper is not
-  // locked by this -- it stays free to move from wherever the scenario put
-  // it, so the two effects can still be told apart by hand.
-  //
-  // One column rather than two: the scatter already reaches two columns
-  // past the centre, and a ball entering much further out than that falls
-  // several rows before the triangle is wide enough to catch it -- those
-  // are decisions it never makes, and the spread shrinks back.
-  const EXTREME_DROP = 2;     // half-columns = one whole column
-  const EXTREME_SCATTER = 4;  // half-columns either way = two columns
-
+  // A climate sets the nails and puts the funnel above its triangle. The
+  // funnel stays free to drag from there.
   function setScenario(name) {
     // A preset swaps the whole board, so the heap is cleared: the point of
     // the presets is to compare one finished distribution with another.
     // Hand-editing single pins deliberately keeps the heap instead.
     pins = scenarioPins(name);
     scenarioName = name;
-    dropOffset = name === 'extrem' ? EXTREME_DROP : 0;
-    dropScatter = name === 'extrem' ? EXTREME_SCATTER : 0;
+    dropOffset = (CLIMATES[name] || CLIMATES.normal).shift;
     shiftMark = settled;
     updateDropLabel();
     scenarioSelect.value = name;
@@ -2179,7 +2152,7 @@
   // ============ INIT / RESIZE ============
   function init() {
     buildLattice();
-    pins = defaultPins();
+    pins = scenarioPins('normal');
     setupDevMode();
     layout();
     setMode(IDLE);

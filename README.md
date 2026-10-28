@@ -94,16 +94,26 @@ The decisions in `js/app.js` that are not obvious from the code alone:
   every ball escapes outward (a U-shape), and with the sides as walls the
   result is far too wide (σ ≈ 2.7), lumpy, and unstable — balls come to
   rest on nails.
-- **Extremklima keeps every nail and unsettles the funnel instead.** Under
-  honest rules the spread is set by how many nails a ball meets, and a
-  full triangle already gives it one per row: removing nails *narrows* the
-  mountain (the earlier thinned pattern would drop to σ 1.33, lumpy), and
-  adding nails between rows only swaps one decision for another. So the
-  extra spread comes from the start: in Extremklima the balls enter
-  anywhere across five columns, centred one column to the warm side, and
-  the funnel mouth opens visibly wider to show it. Exactly: σ 1.58 → 1.95,
-  extremes 2.1 % → 10.3 %, mean +1.00 (measured over 5 000 balls: +1.06,
-  σ 1.94, 10 %). Same nail and ball size throughout.
+- **Five climates, each changing one thing in one direction.** Under
+  honest rules the spread is set by how many nails a ball meets and the
+  mean by where it starts, so:
+
+  | Klima | Nails | Mean | σ |
+  |---|---|---|---|
+  | Normalklima | small triangle, rows 5–10 (21) | 0 | 1.22 |
+  | Wärmeres Klima | the same, one column right | +1 | 1.22 |
+  | Kälteres Klima | the same, one column left | −1 | 1.22 |
+  | Extremeres Klima | full triangle (55) | 0 | 1.58 |
+  | Weniger extremes Klima | rows 7–10 (10) | 0 | 1.00 |
+
+  (Exact; measured over 5 000 balls each: 1.23 · +1.03/1.23 · −0.99/1.23 ·
+  1.58 · 1.01.) Warmer and colder move the small triangle along with the
+  funnel: the funnel alone would hit the triangle on its flank, miss its
+  top rows and come out narrower too (σ 1.00), so the shift would not be
+  shown on its own. Every empty place of the full triangle shows a faint
+  ring, so in Normalklima the rings *are* the nails that make the climate
+  more extreme, and a visitor can build it by hand; places between rows
+  are no longer offered.
 - **The drop point is the funnel.** It is dragged along a notched rail at
   the top of the board rather than set with a stepper under it, so a
   visitor standing in front of the exhibit sees the thing the balls come
