@@ -144,56 +144,28 @@
   // every ball re-deciding left/right ten times, which is exactly what
   // makes it binomial (sigma = sqrt(10)/2 = 1.58 columns).
   //
-  // Extremklima thins the board instead of adding to it. That is the
-  // opposite of what intuition suggests -- *fewer* nails, not more -- and
-  // it is worth spelling out why it widens the spread rather than
-  // narrowing it. A nail re-rolls the dice: it sends the ball left or
-  // right with a fresh coin, independent of how it arrived, and
-  // independent steps are what keep a binomial narrow (they cancel each
-  // other out). A gap does not re-roll anything: a ball crossing one
-  // simply keeps going the way it was already going. Those carried-over
-  // steps are correlated rather than independent, and correlated steps add
-  // up instead of cancelling -- so the mountain gets wider and flatter,
-  // with the same mean.
+  // Extremklima keeps every nail. Its wider spread comes from the funnel
+  // instead: the balls no longer all enter at one point but anywhere
+  // across five columns (see dropScatter), and its centre moves one column
+  // to the warm side (see setScenario).
   //
-  // The pattern: every odd row stays complete, every even row keeps only
-  // half of its nails, in a checkerboard that shifts by one column from
-  // one thinned row to the next. 45 nails instead of 55.
+  // Why not from the nails. With every nail a fair coin and every gap a
+  // straight fall -- which is what a real board does -- the spread is set
+  // by how many nails a ball meets, and a full triangle already gives it
+  // one per row. Taking nails out removes decisions and *narrows* the
+  // mountain (exact: sigma 1.58 -> 1.33 for the old thinned pattern, with
+  // a lumpy histogram); adding nails between the rows only swaps one
+  // decision for another and changes nothing at all. An earlier version
+  // got a wider mountain out of a thinned board only because a gap kept a
+  // ball moving sideways half a column per row -- the long, flat throws
+  // that no real ball makes.
   //
-  //        r=0        .           .           *           .           .
-  //        r=1        .        *     *        .
-  //        r=2        .     *     .     *     .
-  //        r=3     *     *     *     *
-  //        r=4  *     .     *     .     *
-  //
-  // Measured exactly (not sampled), at the centre drop point:
-  //   Normalklima  sigma 1.58   peak bin 24.6%   extremes 2.1%
-  //   Extremklima  sigma 1.89   peak bin 18.8%   extremes 6.4%
-  //
-  // Thinning *within* a row rather than emptying whole rows matters for
-  // two reasons. A completely empty row (an earlier version emptied rows
-  // 2, 5, 8 and 11) lets every ball through, so the correlated step is a
-  // certainty rather than a coin's worth of chance, which overshoots; and
-  // a board of alternate empty rows leaves only one parity of half-column
-  // reachable, so a ball entering on the other one meets nothing at all
-  // and the distribution collapses onto a single bin. Here every row still
-  // catches about half the balls that reach it, at every drop point.
-  function extremeKeeps(r, h) {
-    if (r % 2 !== 0) return true;              // odd rows stay complete
-    return (((h - r) % 4) + 4) % 4 === 0;      // even rows: every other nail
-  }
-
-  function scenarioPins(name) {
-    const p = defaultPins();
-    if (name !== 'extrem') return p;
-
-    for (let r = 0; r < ROWS; r++) {
-      const q = r * 2;                         // row r lives on level 2r
-      for (let h = -r; h <= r; h += 2) {
-        if (!extremeKeeps(r, h)) p[q][h + HOFF] = false;
-      }
-    }
-    return p;
+  // Exact, with the funnel scattering two columns either way:
+  //   Normalklima, centre       sigma 1.58  extremes  2.1%  peak 24.6%
+  //   Extremklima, centre       sigma 1.97  extremes  6.2%  peak 17.4%
+  //   Extremklima, centre +1    sigma 1.95  extremes 10.3%  mean +1.00
+  function scenarioPins() {
+    return defaultPins();
   }
 
   function countPins() {
@@ -234,31 +206,24 @@
   // cheap enough to recompute on every redraw while the toggle is on and
   // always be current with whatever nails are on the board right now.
   function computeTheory() {
-    let dist = { '0:0': 1 };
+    // Start from every slot the funnel can drop a ball on, weighted as
+    // dropSlot() weights them -- it used to start from the apex no matter
+    // where the funnel was, so the curve ignored the drop point.
+    let dist = {};
+    const starts = dropSlots();
+    for (let si = 0; si < starts.length; si++) {
+      dist[starts[si]] = (dist[starts[si]] || 0) + 1 / starts.length;
+    }
     for (let q = 0; q < LEVELS; q++) {
       const next = {};
       for (const key in dist) {
         const p = dist[key];
-        const sep = key.indexOf(':');
-        const h = parseInt(key.slice(0, sep), 10);
-        const dir = parseInt(key.slice(sep + 1), 10);
-        const nail = pinAt(q, h);
-        let outcomes;
-        if (nail && q % 2 === 0) {
-          outcomes = [[h - 1, -1, 0.5], [h + 1, 1, 0.5]];
-        } else if (nail) {
-          const d = h > 0 ? 1 : (h < 0 ? -1 : 0);
-          outcomes = d === 0
-            ? [[h - 2, -1, 0.5], [h + 2, 1, 0.5]]
-            : [[h + 2 * d, d, 1]];
-        } else if (q % 2 === 0) {
-          outcomes = [[h + dir, dir, 1]];
+        const h = parseInt(key, 10);
+        if (pinAt(q, h)) {
+          next[h - 1] = (next[h - 1] || 0) + p * 0.5;
+          next[h + 1] = (next[h + 1] || 0) + p * 0.5;
         } else {
-          outcomes = [[h, dir, 1]];
-        }
-        for (let oi = 0; oi < outcomes.length; oi++) {
-          const k2 = outcomes[oi][0] + ':' + outcomes[oi][1];
-          next[k2] = (next[k2] || 0) + p * outcomes[oi][2];
+          next[h] = (next[h] || 0) + p;
         }
       }
       dist = next;
@@ -267,7 +232,7 @@
     // a fair coin, exactly like stepBall's own settling rule.
     const out = new Array(BINS).fill(0);
     for (const key3 in dist) {
-      const h3 = parseInt(key3.slice(0, key3.indexOf(':')), 10);
+      const h3 = parseInt(key3, 10);
       const p3 = dist[key3];
       if (((h3 % 2) + 2) % 2 !== 0) {
         out[binIndex(halfX(0, h3 - 1))] += p3 * 0.5;
@@ -352,7 +317,25 @@
   // Whole-column steps land on the slots the board actually catches, and
   // the mean then tracks the stepper exactly in both climates.
   function dropX() { return halfX(0, dropOffset); }
-  function dropSlot() { return dropOffset; }
+
+  // How far either side of the drop point a ball may enter, in half-
+  // columns (2 per column). Zero for Normalklima: every ball starts at the
+  // same place. Extremklima sets it to two columns either way -- an
+  // unsettled funnel, the one honest way to widen the spread without
+  // changing the board: the board itself can only add spread by adding
+  // decisions, and every ball already meets one nail per row.
+  let dropScatter = 0;
+
+  // Every slot a ball can enter on, equally likely.
+  function dropSlots() {
+    const out = [];
+    for (let d = -dropScatter; d <= dropScatter; d += 2) out.push(dropOffset + d);
+    return out;
+  }
+  function dropSlot() {
+    const slots = dropSlots();
+    return slots[Math.floor(Math.random() * slots.length)];
+  }
 
   function spawnBall() {
     // h = the ball's position in half-columns, advanced level by level.
@@ -512,23 +495,20 @@
     return fallTime(vy0, ROW_DY / 2);
   }
 
-  // Walk the levels ahead with the same rules stepBall uses, and report
-  // where the ball is next touched: the nail it will hit, or the floor of
-  // the board if there is none left. Levels in between are gaps, which
-  // move the ball along but never deflect it.
-  function nextNailAhead(q0, h0, dir) {
-    let hh = h0;
+  // Walk the levels ahead and report where the ball is next touched: the
+  // first nail straight below it, or the floor of the board if there is
+  // none left. Nothing in between moves it.
+  function nextNailAhead(q0, h0) {
     for (let q = q0; q < LEVELS; q++) {
-      if (pinAt(q, hh)) return { q: q, h: hh };
-      if (q % 2 === 0) hh += dir;
+      if (pinAt(q, h0)) return { q: q, h: h0 };
     }
-    return { q: LEVELS, h: hh };
+    return { q: LEVELS, h: h0 };
   }
 
   // One parabola from here to there, however many empty levels lie in
   // between.
   function aimAtNextNail(b) {
-    const target = nextNailAhead(b.nextRow, b.h, b.dir);
+    const target = nextNailAhead(b.nextRow, b.h);
     const ty = target.q < LEVELS
       ? levelY(target.q) - PIN_R - BALL_R * 0.5
       : BIN_TOP - BALL_R;
@@ -585,30 +565,23 @@
 
       const nail = touched;
 
-      if (nail && q % 2 === 0) {
-        // A nail on the row itself: met head-on, so a fair coin sends the
-        // ball half a column left or right.
+      if (nail) {
+        // A nail is a nail, on a row or added between two rows: the ball
+        // meets it head-on, and a fair coin sends it half a column left or
+        // right. An added nail used to throw the ball a whole column
+        // outward instead, and a missing one used to keep it travelling
+        // sideways half a column per row for as long as the gaps lasted --
+        // both scripted shortcuts that showed as long, flat throws no real
+        // ball could make. Half a column puts the ball either on the next
+        // nail or exactly between two of them, which is what a bounce on a
+        // real board does.
         b.dir = Math.random() < 0.5 ? -1 : 1;
         b.h += b.dir;
         b.hop = true;
-      } else if (nail) {
-        // A nail wedged between two rows. It sits off to one side, so the
-        // ball cannot split on it -- it is thrown clear, outward, past the
-        // neighbouring nail and into the next column. Every ball that
-        // reaches it bounces: that is what makes an added nail visible.
-        // A whole column, not half, so the ball stays on the lattice the
-        // bins are built on.
-        b.dir = b.h > 0 ? 1 : (b.h < 0 ? -1 : (Math.random() < 0.5 ? 1 : -1));
-        b.h += 2 * b.dir;
-        b.hop = true;
-      } else if (q % 2 === 0) {
-        // A hole where one of the board's own nails should be: nothing
-        // touches the ball, so it keeps flying the way it already was
-        // instead of being pulled back towards the middle.
-        b.h += b.dir;
-        b.hop = false;
       } else {
-        // Empty air between two rows.
+        // Nothing here: the ball falls on, straight down, until the next
+        // nail below it. (Two rows on, if it is between the nails of the
+        // row directly underneath -- it passes through that gap.)
         b.hop = false;
       }
 
@@ -925,8 +898,12 @@
     boardCtx.beginPath();
     boardCtx.moveTo(0.10 * W, 0);
     boardCtx.lineTo(0.90 * W, 0);
-    boardCtx.lineTo((mouth + 0.065) * W, FUNNEL_Y * H);
-    boardCtx.lineTo((mouth - 0.065) * W, FUNNEL_Y * H);
+    // The mouth opens up as far as the funnel scatters the balls, so an
+    // unsettled Extremklima funnel is visibly wider rather than just
+    // behaving differently.
+    const mouthHalf = 0.065 + dropScatter * COL_DX / 2;
+    boardCtx.lineTo((mouth + mouthHalf) * W, FUNNEL_Y * H);
+    boardCtx.lineTo((mouth - mouthHalf) * W, FUNNEL_Y * H);
     boardCtx.closePath();
     boardCtx.fill();
 
@@ -1660,11 +1637,12 @@
   // locked by this -- it stays free to move from wherever the scenario put
   // it, so the two effects can still be told apart by hand.
   //
-  // One column rather than two: at two the entry sits so far out that the
-  // triangle only catches the ball a few rows down, and the spread the
-  // scenario is there to show shrinks back (sigma 1.89 at the centre, 1.62
-  // one column out, 1.32 at two).
+  // One column rather than two: the scatter already reaches two columns
+  // past the centre, and a ball entering much further out than that falls
+  // several rows before the triangle is wide enough to catch it -- those
+  // are decisions it never makes, and the spread shrinks back.
   const EXTREME_DROP = 2;     // half-columns = one whole column
+  const EXTREME_SCATTER = 4;  // half-columns either way = two columns
 
   function setScenario(name) {
     // A preset swaps the whole board, so the heap is cleared: the point of
@@ -1673,6 +1651,7 @@
     pins = scenarioPins(name);
     scenarioName = name;
     dropOffset = name === 'extrem' ? EXTREME_DROP : 0;
+    dropScatter = name === 'extrem' ? EXTREME_SCATTER : 0;
     shiftMark = settled;
     updateDropLabel();
     scenarioSelect.value = name;

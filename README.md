@@ -79,36 +79,42 @@ the left, sized to the screen; all controls and tasks on the right.
 
 ## Model notes
 
-Three decisions in `js/app.js` are not obvious from the code alone:
+The decisions in `js/app.js` that are not obvious from the code alone:
 
-- **Extremklima thins the board, it does not add to it.** Every odd row
-  stays complete, every even row keeps only half of its nails, in a
-  checkerboard that shifts by one column from one thinned row to the next
-  (45 nails instead of 55). A nail re-rolls the dice; a gap does not, so a
-  ball crossing one keeps the direction it already had, and those
-  correlated steps add up instead of cancelling. Exactly (not sampled):
-  σ 1.58 → 1.89, peak column 24.6 % → 18.8 %, extremes 2.1 % → 6.4 %,
-  mean untouched. Adding the between-row nails instead widens nothing —
-  they are deterministic outward deflectors, and switching them all on
-  gives a bimodal U (σ = 6.0). Emptying whole rows overshoots (every ball
-  passes, instead of half of them); emptying every second row collapses the
-  board onto one bin, because only one parity of half-column stays
-  reachable.
+- **Every nail is a fair coin; a missing one lets the ball fall on.** A
+  ball meeting a nail — on a row, or one a visitor added between two rows
+  — goes half a column left or right; a ball meeting no nail falls
+  straight down to the next nail below it (two rows on, if it is between
+  the nails of the row directly underneath). Earlier versions had two
+  shortcuts here: an added nail threw a ball a whole column outward, and a
+  gap kept it travelling sideways half a column per row for as long as the
+  gaps lasted. Both showed as long, flat throws no real ball makes. A
+  continuous physics simulation of this exact board was tried as the
+  alternative and is no better: with the triangle's sides open nearly
+  every ball escapes outward (a U-shape), and with the sides as walls the
+  result is far too wide (σ ≈ 2.7), lumpy, and unstable — balls come to
+  rest on nails.
+- **Extremklima keeps every nail and unsettles the funnel instead.** Under
+  honest rules the spread is set by how many nails a ball meets, and a
+  full triangle already gives it one per row: removing nails *narrows* the
+  mountain (the earlier thinned pattern would drop to σ 1.33, lumpy), and
+  adding nails between rows only swaps one decision for another. So the
+  extra spread comes from the start: in Extremklima the balls enter
+  anywhere across five columns, centred one column to the warm side, and
+  the funnel mouth opens visibly wider to show it. Exactly: σ 1.58 → 1.95,
+  extremes 2.1 % → 10.3 %, mean +1.00 (measured over 5 000 balls: +1.06,
+  σ 1.94, 10 %). Same nail and ball size throughout.
 - **The drop point is the funnel.** It is dragged along a notched rail at
   the top of the board rather than set with a stepper under it, so a
   visitor standing in front of the exhibit sees the thing the balls come
   out of move. The grip is drawn on the ball canvas, after the balls, so
   the stream passes behind it. A pair of visually hidden buttons
   (`#drop-ctl`) keeps it reachable by keyboard and screen reader.
-- **The drop point steps in whole columns.** A ball enters carrying no
-  direction, so it does not drift: it waits in its entry column until some
-  row has a nail there. On the thinned board those rows sit on even
-  half-columns, so a half-column entry is quantised down and the shift is
-  swallowed — the exact DP gives a mean of 0.016 where 0.5 was asked for.
-  With whole columns the mean tracks the stepper exactly in both climates
-  (measured over 2 920 balls: +0.99 and +2.02). The triangle has no margin
-  beyond its flanks, so an off-centre drop does cost spread: σ 1.58 → 1.41
-  → 1.22 in Normalklima, 1.89 → 1.62 → 1.32 in Extremklima.
+- **The drop point steps in whole columns**, ±2, by dragging the funnel.
+  The triangle has no margin beyond its flanks, so an off-centre drop
+  costs spread — a ball entering out there falls a few rows before the
+  board is wide enough to catch it: σ 1.58 → 1.41 → 1.22 at one and two
+  columns out. The mean stays exact.
 - **A column is a ball count against a ceiling the visitor sets.** The
   stepper beside the columns runs 10 · 20 · 50 · 100 · 200 · 500 · 1000 ·
   2000 · 5000 and starts at 200, which puts the default 365-ball run at
@@ -119,16 +125,10 @@ Three decisions in `js/app.js` are not obvious from the code alone:
   point every further ball lands in a bar that cannot grow and the picture
   quietly stops being true. Three other readings (an auto-growing ceiling, share of the
   tallest column, share of all balls) stay in the dev panel.
-- **A ball flies one arc from nail to nail**, not one per level. Where a
-  nail is missing nothing touches the ball, so it has to sail straight
-  over the empty slot — and an arc is only straight if nothing re-aims it
-  halfway. Re-aiming per level made a ball visibly veer sideways exactly
-  where a nail had been taken out, because the flight to the next level is
-  far shorter in time than a bounce arc (already falling fast, no upward
-  kick) and covering the same sideways distance in it needed a burst of
-  speed. The lattice bookkeeping is untouched — same half-columns in the
-  same order, so the distribution is unchanged (measured over 5 000 balls:
-  σ 1.56 normal, mean +0.98 / σ 1.63 in Extremklima at its drop point).
+- **A ball flies one arc from nail to nail**, not one per level, and is
+  only eased back onto the lattice where something actually touches it.
+  Re-aiming at every level put a kink in the path exactly where a nail was
+  missing.
 - **Ten pin rows, not twelve, and the bin walls start at 0.69 instead of
   0.80.** Together with a frame a tenth taller than wide that is about
   75 % more height for the columns. The simulation lives in a unit space,
