@@ -1146,9 +1146,11 @@
     // Show what is still on its way, so topping the board up mid-run reads
     // as "more coming" rather than looking like nothing happened.
     const pending = toRelease + balls.length;
-    roFallen.textContent = pending > 0
-      ? t('readout.pending', settled, pending)
-      : String(settled);
+    if (pending > 0) {
+      roFallen.innerHTML = settled + '<span class="pending">(+' + pending + ')</span>';
+    } else if (roFallen.textContent !== String(settled)) {
+      roFallen.textContent = String(settled);
+    }
     checkTasks();
 
     const st = statsFromBins();
@@ -1201,12 +1203,26 @@
   // ============ TASKS ============
   // Three small experiments; solving all of them unlocks the Merke box.
   const tasks = SCAPE.tasks(document.getElementById('gb-tasks'));
+  const tasksCount = document.getElementById('tasks-count');
+  const tasksBox = document.getElementById('gb-tasks-box');
+
+  // The summary shows how far along the visitor is even while the list is
+  // folded away -- without it there is nothing to suggest the box is worth
+  // opening, now that the Merke box that used to react is gone.
+  function updateTaskCount() {
+    const items = tasksBox.querySelectorAll('.tasks li');
+    let done = 0;
+    items.forEach((li) => { if (li.classList.contains('done')) done++; });
+    tasksCount.textContent = done + '/' + items.length;
+    tasksBox.classList.toggle('all-done', done === items.length);
+  }
   let shiftMark = 0;   // settled count when the drop point last moved
   const TASK_BALLS = 200;
   function checkTasks() {
     if (settled >= 365) tasks.done('mountain');
     if (dropOffset !== 0 && settled - shiftMark >= TASK_BALLS) tasks.done('shift');
     if (scenarioName === 'extrem' && settled >= TASK_BALLS) tasks.done('extreme');
+    updateTaskCount();
   }
 
   const ICON_PLAY = '<path d="M6 4l14 8-14 8V4z" fill="currentColor" stroke="none"/>';
@@ -1283,8 +1299,14 @@
     updateHint();
   }
 
+  // The sentence under the board is gone -- the tasks box stands there
+  // now -- but the nail count it carried is still the one number a visitor
+  // editing the board wants, so it lives on in the board (i) note, which
+  // is rewritten in place whenever the board changes.
   function updateHint() {
     hint.textContent = t('hint', countPins());
+    const slot = document.getElementById('board-help-count');
+    if (slot) slot.textContent = countPins();
   }
 
   // ============ BIN TOOLTIP ============
@@ -2086,6 +2108,7 @@
     updateDropLabel();
     updateAxisNote();
     updateCompareChips();
+    updateTaskCount();
     drawBoard();
     drawBalls();
     updateReadout();

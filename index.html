@@ -79,7 +79,7 @@
       <div class="ctl-row">
         <div class="count-ctl">
           <button type="button" class="sq" id="count-down" data-t-aria="readout.fewer">&minus;</button>
-          <b class="val" id="ball-count-label">365</b>
+          <span class="count-val"><b class="val" id="ball-count-label">365</b><span class="count-unit" data-t="readout.balls"></span></span>
           <button type="button" class="sq" id="count-up" data-t-aria="readout.more">&plus;</button>
         </div>
         <button type="button" class="btn icon primary" id="sim-primary" data-t-aria="primary.startAria">
@@ -103,6 +103,7 @@
         <button type="button" class="btn icon" id="tool-wipe" data-t-aria="scenario.wipeAria">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/><circle cx="9.4" cy="13.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="14.6" cy="13.6" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="9.6" r="1.5" fill="currentColor" stroke="none"/></svg>
         </button>
+        <button type="button" class="info" aria-controls="board-help" data-t-aria="scenario.infoAria"></button>
       </div>
       <div class="scenario-panel" id="scenario-panel" hidden>
         <div class="seg-row" id="scenario-row">
@@ -111,8 +112,19 @@
         </div>
       </div>
       <div class="info-note" id="controls-help" hidden data-t-html="controls.note"></div>
+      <div class="info-note" id="board-help" hidden data-t-html="scenario.note"></div>
 
-      <p class="hint" id="hint"></p>
+      <details class="tasks-box" id="gb-tasks-box">
+        <summary><span data-t="tasks.title"></span><span class="tasks-count" id="tasks-count"></span></summary>
+        <div class="tasks" id="gb-tasks">
+          <ul>
+            <li data-task="mountain"><span class="box"></span><span data-t="tasks.mountain"></span></li>
+            <li data-task="shift"><span class="box"></span><span data-t="tasks.shift"></span></li>
+            <li data-task="extreme"><span class="box"></span><span data-t="tasks.extreme"></span></li>
+          </ul>
+        </div>
+      </details>
+      <p class="hint" id="hint" hidden></p>
 
       <!-- Staff panel: ?dev, Shift+D or the faint (dev) link in the footer. -->
       <div class="dev-panel" id="dev-panel" hidden>
@@ -194,18 +206,6 @@
           <figcaption data-t-html="topics.change.extremeCaption"></figcaption>
         </figure>
         <div data-t-html="topics.change.outro"></div>
-      </div>
-    </details>
-    <details class="topic">
-      <summary data-t="tasks.title"></summary>
-      <div class="topic-body">
-        <div class="tasks" id="gb-tasks">
-          <ul>
-          <li data-task="mountain"><span class="box"></span><span data-t="tasks.mountain"></span></li>
-          <li data-task="shift"><span class="box"></span><span data-t="tasks.shift"></span></li>
-          <li data-task="extreme"><span class="box"></span><span data-t="tasks.extreme"></span></li>
-        </ul>
-        </div>
       </div>
     </details>
     <details class="topic">

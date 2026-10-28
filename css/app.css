@@ -106,11 +106,29 @@
 }
 .ctl-row .btn.icon svg { width: 24px; height: 24px; }
 .ctl-row .info { align-self: center; margin-left: auto; }
+.ctl-row .btn.climate + .btn.icon + .info { margin-left: 0; }
+
+/* The tasks sit where the "nails in the board" sentence used to, folded
+   away behind their own summary with a running count, so they take one
+   line until someone wants them. */
+.tasks-box { border-top: var(--line-width) solid var(--line); border-bottom: var(--line-width) solid var(--line); margin: 4px 0 12px; }
+.tasks-box > summary {
+  cursor: pointer; list-style: none; padding: 10px 2px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: var(--fw-medium); letter-spacing: .06em; text-transform: var(--caps);
+}
+.tasks-box > summary::-webkit-details-marker { display: none; }
+.tasks-box > summary::after { content: '+'; margin-left: auto; font-size: 18px; line-height: 1; }
+.tasks-box[open] > summary::after { content: '\2212'; }
+.tasks-count { font-variant-numeric: tabular-nums; opacity: .7; }
+.tasks-box .tasks { padding: 0 2px 10px; }
 .count-ctl {
   flex: 0 0 auto; display: flex; align-items: center; gap: 4px;
   margin-right: 2px;
 }
+.count-val { display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
 .count-ctl .val { min-width: 2.8em; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
+.count-unit { font-size: 8px; font-weight: var(--fw-bold); letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 
 /* The climate picker keeps a word, because "Normalklima" and
    "Extremklima" are the one thing on this board no pictogram can say. */
@@ -121,10 +139,15 @@
 #scenario-toggle[aria-expanded="true"] { background: var(--active); color: var(--active-ink); }
 
 /* comparison tiles: in the board frame, beside the lines they stand for */
+/* Bottom right, exactly opposite the ceiling stepper at bottom left: the
+   two things you set about the columns sit on either side of them. The
+   kit's fullscreen button is moved to the top right to make room. */
 .compare-ctl {
-  position: absolute; right: 5px; top: 52%; z-index: 4;
+  position: absolute; right: 5px; bottom: 6px; z-index: 4;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
+#stage-frame .fs-btn { top: 8px; bottom: auto; width: 34px; height: 34px; }
+#stage-frame .fs-btn svg { width: 17px; height: 17px; }
 .compare-unit {
   font-size: 8px; font-weight: var(--fw-bold); letter-spacing: .06em;
   text-transform: uppercase; opacity: .75; max-width: 46px; text-align: center; line-height: 1.15;
@@ -149,7 +172,16 @@
 #sim-primary { flex: 1.5; }
 #sim-single { flex: 1.1; }
 #sim-reset { flex: .9; }
-.readout-grid { gap: 10px 18px; }
+/* Four equal columns, not four blocks sized by their content: while balls
+   are in the air the first value reads "365 (+120)" instead of "0", and a
+   content-sized row made every other number jump sideways at that moment.
+   Equal fractions keep each value nailed to its own quarter whatever is
+   printed in it, and the pending part is set smaller so it fits there. */
+.readout-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 12px; align-items: start; }
+.readout-grid > div { min-width: 0; }
+.readout-grid b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#ro-fallen .pending { font-size: 13px; opacity: .7; margin-left: 2px; }
+:root[data-view="mobile"] .readout-grid b { font-size: 18px; }
 
 /* ---- dev panel (staff only) ---- */
 .dev-panel { border: 2px dashed var(--line); background: var(--c-lavender); padding: 12px; margin: 12px 0; }

@@ -6,8 +6,8 @@ between "Normalklima" and "Extremklima" to see the three effects of climate
 change on a distribution: shift of the mean, wider spread, many more
 extremes. Up to three runs can be frozen as dashed comparison lines.
 
-Three tasks (365 balls; shift the drop point; extreme climate) sit with
-the other collapsible topics below the board.
+Three tasks (365 balls; shift the drop point; extreme climate) fold out of
+a one-line box under the controls, with a running count in its summary.
 
 ## Run
 
@@ -47,9 +47,16 @@ the height of the block and a play triangle needs none. The second is
 everything that changes the board: a **Klima** dropdown (Normalklima /
 Extremklima, or "Angepasst" once nails are edited by hand) and
 reset-the-nails, which is the same reset glyph with nails in it instead of
-a ball. On the board itself: the funnel is the drop point, the ceiling
-stepper sits left of the columns, and the three comparison tiles sit right
-of them, each in the colour of the line it freezes.
+a ball, and its own `(i)`. On the board itself: the funnel is the drop
+point, fullscreen sits top right, and the two things you set about the
+columns sit on either side of them — the ceiling stepper bottom left, the
+three comparison tiles bottom right, each in the colour of the line it
+freezes.
+
+The readout above the controls is a four-column grid of equal fractions
+rather than content-sized blocks: while balls are in the air the first
+value reads "0 (+365)" instead of "0", and content sizing made every other
+number jump sideways the moment a run started.
 
 ## Layout
 
